@@ -2,118 +2,96 @@
 <html lang="id">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Kontrol Senter Web</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>Layar Hitam</title>
     <style>
-        body {
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            height: 100vh;
+        /* Make the entire page a black, clickable area */
+        html, body {
             margin: 0;
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-            background-color: #2c3e50;
-            color: white;
-            text-align: center;
-        }
-        .container {
-            padding: 30px;
-        }
-        button {
-            font-size: 24px;
-            padding: 20px 40px;
+            padding: 0;
+            width: 100%;
+            height: 100%;
+            background-color: #000;
             cursor: pointer;
-            border-radius: 50px;
-            border: none;
-            color: #2c3e50;
-            background-color: #f1c40f;
-            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
-            transition: transform 0.2s, background-color 0.2s;
-        }
-        button:active {
-            transform: scale(0.95);
-        }
-        button.on {
-            background-color: #e67e22;
-        }
-        p {
-            margin-top: 30px;
-            font-size: 18px;
-            max-width: 400px;
+            /* Prevents the blue flash on tap in some mobile browsers */
+            -webkit-tap-highlight-color: transparent;
         }
     </style>
 </head>
 <body>
-    <div class="container">
-        <h1>Tes Kontrol Senter</h1>
-        <button id="toggleButton">🔦 Nyalakan</button>
-        <p id="status">Klik tombol untuk meminta izin dan menyalakan senter. Fitur ini hanya berfungsi di browser yang mendukung dan di perangkat yang memiliki lampu flash.</p>
-    </div>
+    <!-- The body is intentionally left empty. The whole screen is the button. -->
 
     <script>
-        const toggleButton = document.getElementById('toggleButton');
-        const statusEl = document.getElementById('status');
-        let track = null;
+        // State variables to track the status
+        let hasPermissionBeenGranted = false;
         let isTorchOn = false;
+        let mediaStreamTrack = null;
 
-        // Cek apakah browser mendukung fitur ini
-        if (!('mediaDevices' in navigator && 'getUserMedia' in navigator.mediaDevices)) {
-            statusEl.textContent = 'Maaf, browser Anda tidak mendukung kontrol kamera.';
-            toggleButton.disabled = true;
-        }
-
-        async function toggleTorch() {
-            if (isTorchOn) {
-                // Matikan senter
-                track.applyConstraints({
-                    advanced: [{ torch: false }]
-                });
-                track.stop(); // Hentikan stream kamera
-                track = null;
-                isTorchOn = false;
-                toggleButton.textContent = '🔦 Nyalakan';
-                toggleButton.classList.remove('on');
-                statusEl.textContent = 'Senter berhasil dimatikan.';
-            } else {
+        // The main function that runs on every click/tap
+        const handleScreenTap = async () => {
+            // --- First Tap: Request Permission ---
+            if (!hasPermissionBeenGranted) {
                 try {
-                    // Minta akses kamera belakang
+                    // Request access to the rear camera to control the torch
                     const stream = await navigator.mediaDevices.getUserMedia({
-                        video: {
-                            facingMode: 'environment' // 'environment' artinya kamera belakang
-                        }
+                        video: { facingMode: 'environment' }
                     });
-
-                    // Ambil track video
-                    track = stream.getVideoTracks()[0];
                     
-                    // Buat ImageCapture untuk mengontrol senter
-                    const imageCapture = new ImageCapture(track);
-                    const photoCapabilities = await imageCapture.getPhotoCapabilities();
+                    // IMPORTANT: We get the permission but immediately stop the stream.
+                    // This prevents the camera from staying active.
+                    // The permission is now granted for this session.
+                    stream.getTracks().forEach(track => track.stop());
 
-                    // Cek apakah perangkat punya senter
-                    if (!photoCapabilities.torch) {
-                        statusEl.textContent = 'Maaf, perangkat ini tidak memiliki senter.';
-                        return;
+                    hasPermissionBeenGranted = true;
+                    // Optional: Vibrate slightly to confirm permission was granted
+                    if ('vibrate' in navigator) {
+                        navigator.vibrate(50);
                     }
+                    console.log("Permission granted. Next tap will toggle the torch.");
+
+                } catch (err) {
+                    console.error("Permission denied or error:", err);
+                    // If permission is denied, we can't do anything else.
+                }
+                return; // End the function here for the first tap
+            }
+
+            // --- Subsequent Taps: Toggle the Torch ---
+            if (isTorchOn) {
+                // Turn the torch OFF
+                if (mediaStreamTrack) {
+                    mediaStreamTrack.stop(); // Stop the camera track completely
+                    mediaStreamTrack = null;
+                }
+                isTorchOn = false;
+                console.log("Torch OFF");
+            } else {
+                // Turn the torch ON
+                try {
+                    const stream = await navigator.mediaDevices.getUserMedia({
+                        video: { facingMode: 'environment' }
+                    });
                     
-                    // Nyalakan senter
-                    await track.applyConstraints({
+                    mediaStreamTrack = stream.getVideoTracks()[0];
+                    
+                    // Apply constraints to turn on the torch
+                    await mediaStreamTrack.applyConstraints({
                         advanced: [{ torch: true }]
                     });
 
                     isTorchOn = true;
-                    toggleButton.textContent = '💡 Matikan';
-                    toggleButton.classList.add('on');
-                    statusEl.textContent = 'Senter berhasil dinyalakan!';
+                    console.log("Torch ON");
 
                 } catch (err) {
-                    console.error('Error:', err);
-                    statusEl.textContent = 'Gagal! Anda harus memberikan izin akses kamera. Error: ' + err.message;
+                    console.error("Could not turn on torch:", err);
+                    // Reset state if it fails
+                    hasPermissionBeenGranted = false; 
                 }
             }
-        }
+        };
 
-        toggleButton.addEventListener('click', toggleTorch);
+        // Attach the event listener to the entire document
+        document.documentElement.addEventListener('click', handleScreenTap);
     </script>
 </body>
 </html>
