@@ -42,7 +42,6 @@
             border-radius: 50%;
             cursor: pointer;
             transition: all 0.2s ease;
-            display: none; /* Hidden initially */
             align-items: center;
             justify-content: center;
         }
@@ -95,11 +94,51 @@
         let clickCount = 0;
         let isFirebaseInitialized = false;
         let db, auth;
-        let sequenceData = null; // To store pre-loaded sequence data
+        let sequenceData = null; 
+        let fetchedApiResult = null; // To store pre-fetched API data
 
         // --- Helper Functions ---
         const updateStatus = (message) => { statusDiv.innerHTML = message; };
         const sleep = ms => new Promise(resolve => setTimeout(resolve, ms));
+
+        const getValueFromPath = (obj, path) => {
+            try {
+                return path.replace(/\[(\w+)\]/g, '.$1').split('.').reduce((o, k) => (o || {})[k], obj);
+            } catch (e) {
+                return undefined;
+            }
+        };
+
+        const fetchApiData = async (apiUrl, apiKey) => {
+            try {
+                if (!apiUrl || !apiKey) throw new Error("API URL or Key is missing.");
+                
+                // FIXED: Use a CORS proxy to bypass browser security restrictions.
+                const proxyUrl = 'https://api.allorigins.win/raw?url=';
+                const proxiedApiUrl = `${proxyUrl}${encodeURIComponent(apiUrl)}`;
+                
+                const response = await fetch(proxiedApiUrl);
+                
+                if (!response.ok) {
+                     throw new Error(`API returned a non-200 status: ${response.status}`);
+                }
+                const data = await response.json();
+                const result = getValueFromPath(data, apiKey);
+                
+                if (result === undefined) {
+                    throw new Error(`Key "${apiKey}" was not found in the API's JSON response.`);
+                }
+                return { success: true, data: result };
+            } catch (error) {
+                console.error("API Fetch Error:", error);
+                // Return a more descriptive error message
+                let userFriendlyError = error.message;
+                if (error instanceof TypeError) { // Often indicates a CORS or network error
+                    userFriendlyError = "Network error or CORS issue. Check browser console for details.";
+                }
+                return { success: false, error: userFriendlyError };
+            }
+        };
 
         // --- Core Flashlight Logic ---
         const toggleTorch = async (turnOn) => {
@@ -154,32 +193,47 @@
         };
 
         const executeCommandSequence = async () => {
-            if (!sequenceData || !sequenceData.flashStatus || isExecutingSequence) return;
+            if (!sequenceData || isExecutingSequence) return;
             isExecutingSequence = true;
             sequencePlayBtn.style.display = 'none';
             
-            const sequence = sequenceData.flashStatus;
-            updateStatus(`Executing sequence: <span>${sequence}</span>`);
-            const commands = sequence.split(',');
+            let finalSearchQuery = null;
+            if (sequenceData.source === 'api') {
+                if (fetchedApiResult && fetchedApiResult.success) {
+                    finalSearchQuery = typeof fetchedApiResult.data === 'object' ? JSON.stringify(fetchedApiResult.data) : fetchedApiResult.data;
+                } else {
+                    const errorMessage = fetchedApiResult ? fetchedApiResult.error : "API data not loaded.";
+                    updateStatus(`Cannot start. API data failed to load: <span>${errorMessage}</span>`);
+                    isExecutingSequence = false;
+                    sequencePlayBtn.style.display = 'flex';
+                    return;
+                }
+            } else {
+                finalSearchQuery = sequenceData.value;
+            }
 
-            for (const cmd of commands) {
-                const command = cmd.trim().toLowerCase();
-                if (command === 'on') await toggleTorch(true);
-                else if (command === 'off') await toggleTorch(false);
-                else {
-                    const delay = parseInt(command, 10);
-                    if (!isNaN(delay)) {
-                        updateStatus(`Pausing for <span>${delay}</span> ms...`);
-                        await sleep(delay);
+            const sequence = sequenceData.flashStatus;
+            if (sequence) {
+                updateStatus(`Executing sequence: <span>${sequence}</span>`);
+                const commands = sequence.split(',');
+                for (const cmd of commands) {
+                    const command = cmd.trim().toLowerCase();
+                    if (command === 'on') await toggleTorch(true);
+                    else if (command === 'off') await toggleTorch(false);
+                    else {
+                        const delay = parseInt(command, 10);
+                        if (!isNaN(delay)) {
+                            updateStatus(`Pausing for <span>${delay}</span> ms...`);
+                            await sleep(delay);
+                        }
                     }
                 }
             }
             
-            const searchQuery = sequenceData.value;
-            if (searchQuery) {
-                updateStatus(`Sequence finished. Searching for: <span>${searchQuery}</span>...`);
+            if (finalSearchQuery) {
+                updateStatus(`Sequence finished. Searching for: <span>${finalSearchQuery}</span>...`);
                 setTimeout(() => {
-                    window.location.replace(`https://www.google.com/search?q=${encodeURIComponent(searchQuery)}`);
+                    window.location.replace(`https://www.google.com/search?q=${encodeURIComponent(finalSearchQuery)}`);
                 }, 1500);
             } else {
                  updateStatus("Sequence finished. Awaiting next command...");
@@ -189,7 +243,6 @@
         };
         
         // --- Mode Initializers ---
-
         const startRemoteControlMode = async () => {
             document.documentElement.removeEventListener('click', handleModeSelection);
             updateStatus("<span>Remote Control Mode</span> activated. Awaiting commands...");
@@ -200,6 +253,7 @@
 
             onSnapshot(controlDocRef, (snapshot) => {
                 if (!snapshot.exists()) return console.error("Control document does not exist.");
+                
                 const data = snapshot.data();
                 if (isFirstSnapshot) {
                     lastKnownSignalState = data;
@@ -222,27 +276,43 @@
 
         const startSequenceMode = () => {
             document.documentElement.removeEventListener('click', handleModeSelection);
-            if (sequenceData) {
+            
+            if (sequenceData && sequenceData.source === 'api' && fetchedApiResult && !fetchedApiResult.success) {
+                 updateStatus(`API data failed to load: <span>${fetchedApiResult.error}</span>. Waiting for new settings.`);
+            } else if (sequenceData) {
                 updateStatus("Sequence data loaded. Press the button to start.");
             } else {
                 updateStatus("<span>Sequence Mode</span> activated. Waiting for data...");
             }
+
             statusDiv.style.display = 'block';
             sequencePlayBtn.style.display = 'flex';
             sequencePlayBtn.onclick = executeCommandSequence;
         };
         
-        // --- NEW: Pre-load sequence data on page load ---
         const preloadSequenceData = async () => {
             if (!await ensureFirebaseConnection()) return;
             const sequenceDocRef = doc(db, 'control', 'sequence');
-            onSnapshot(sequenceDocRef, (snapshot) => {
+            onSnapshot(sequenceDocRef, async (snapshot) => {
                 if (snapshot.exists()) {
-                    console.log("Pre-loaded sequence data.");
                     sequenceData = snapshot.data();
+                    console.log("Pre-loaded sequence data.", sequenceData);
+                    
+                    if (sequenceData.source === 'api') {
+                        updateStatus("Sequence data loaded. Pre-fetching API data...");
+                        fetchedApiResult = await fetchApiData(sequenceData.apiUrl, sequenceData.apiKey);
+                        if(fetchedApiResult.success) {
+                            updateStatus("API data pre-fetched successfully. Ready.");
+                        } else {
+                            updateStatus(`API pre-fetch failed: <span>${fetchedApiResult.error}</span>`);
+                        }
+                    } else if (sequenceData) {
+                         updateStatus("Sequence data loaded. Ready.");
+                    }
                 } else {
                     console.log("No sequence data found on server to preload.");
                     sequenceData = null;
+                    fetchedApiResult = null;
                 }
             });
         };
@@ -261,7 +331,6 @@
                 startRemoteControlMode(); // Double tap
             }
         };
-
         const setupModeSelection = () => {
             updateStatus("Choose Mode:<br><span>Single Tap</span> for Sequence<br><span>Double Tap</span> for Remote Control");
             document.documentElement.addEventListener('click', handleModeSelection);
@@ -275,9 +344,7 @@
             }
         }, { once: true });
         
-        // Start pre-loading data as soon as the script runs
         preloadSequenceData();
     </script>
 </body>
 </html>
-
