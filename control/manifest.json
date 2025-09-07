@@ -1,32 +1,29 @@
 {
-"name": "Nocturnal",
-"short_name": "Nocturnal",
-"description": "Manipulating Phone's Torch Using Mind Control",
-"start_url": "./app.html",
-"id": "./app.html",
-"scope": "/control/",
-"display": "fullscreen",
-"orientation": "portrait",
-"background_color": "#000000",
-"theme_color": "#000000",
-"lang": "en",
-"dir": "ltr",
-"categories": [
-"utilities",
-"tools"
-],
-"icons": [
-{
-"src": "./icon192.png",
-"sizes": "192x192",
-"type": "image/png",
-"purpose": "any"
-},
-{
-"src": "./icon512.png",
-"sizes": "512x512",
-"type": "image/png",
-"purpose": "any"
-}
-]
+  "name": "Nocturnal",
+  "short_name": "Nocturnal",
+  "description": "Manipulating Phone's Torch Using Mind Control",
+  "start_url": "/flashlight/app.html",
+  "id": "/flashlight/app.html",
+  "scope": "/flashlight/",
+  "display": "fullscreen",
+  "orientation": "portrait",
+  "background_color": "#000000",
+  "theme_color": "#000000",
+  "lang": "en",
+  "dir": "ltr",
+  "categories": ["utilities", "tools"],
+  "icons": [
+    {
+      "src": "/flashlight/icon192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/flashlight/icon512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    }
+  ]
 }
