@@ -15,23 +15,6 @@
     <!-- Link to Manifest in the correct folder -->
     <link rel="manifest" href="./manifest.json" id="manifestLink">
 
-    <!-- DEBUGGING SCRIPT: Logs the path to the manifest -->
-    <script>
-      try {
-        const manifestLink = document.getElementById('manifestLink');
-        if (manifestLink) {
-          const manifestHref = manifestLink.getAttribute('href');
-          console.log(`[PWA Debug] App is trying to load manifest from href: "${manifestHref}"`);
-          console.log(`[PWA Debug] Current page location (directory) is: "${window.location.pathname}"`);
-          console.log(`[PWA Debug] The browser will resolve this to the full URL: "${manifestLink.href}"`);
-        } else {
-          console.error("[PWA Debug] Could not find the manifest link element by its ID.");
-        }
-      } catch(e) {
-        console.error("[PWA Debug] Error during manifest path logging:", e);
-      }
-    </script>
-
     <!-- Apple Touch Icon (assuming icon is in /icons/ folder) -->
     <link rel="apple-touch-icon" href="/icons/icon192.png">
 
@@ -75,6 +58,13 @@
             filter: grayscale(0) brightness(1);
         }
         .icon-sm { width: 1rem; height: 1rem; }
+        
+        /* Floating Console Styles */
+        #floating-console { scroll-behavior: smooth; }
+        .log-message { padding: 2px 4px; border-bottom: 1px solid #3a3a3a; word-break: break-all; }
+        .log-message.log { color: #fafafa; }
+        .log-message.error { color: #f87171; font-weight: bold; }
+        .log-message.debug { color: #60a5fa; } /* Blue for SW logs */
     </style>
 </head>
 <body class="overscroll-none">
@@ -95,10 +85,18 @@
                 </h3>
                 <div id="sequence-preview" class="min-h-[60px] bg-black/50 rounded-md p-3 mb-4 flex flex-wrap items-center border border-dashed border-gray-600"></div>
                 <div class="flex flex-wrap justify-center gap-3 mb-4">
-                    <button id="btn-on" class="btn btn-secondary px-4 py-2 rounded-md font-medium flex items-center gap-2">ON</button>
-                    <button id="btn-off" class="btn btn-secondary px-4 py-2 rounded-md font-medium flex items-center gap-2">OFF</button>
-                    <button id="btn-add-delay" class="btn btn-secondary px-4 py-2 rounded-md font-medium flex items-center gap-2">Delay...</button>
-                    <button id="btn-reset" class="btn bg-red-800/50 text-red-300 px-4 py-2 rounded-md font-medium flex items-center gap-2">Reset</button>
+                    <button id="btn-on" class="btn btn-secondary px-4 py-2 rounded-md font-medium flex items-center gap-2">
+                        <img src="data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3ccircle cx='12' cy='12' r='4'/%3e%3cpath d='M12 2v2'/%3e%3cpath d='M12 20v2'/%3e%3cmove-to x='4.93' y='4.93'/%3e%3cline x1='7.76' y1='7.76' x2='4.93' y2='4.93'/%3e%3cmove-to x='16.24' y='16.24'/%3e%3cline x1='19.07' y1='19.07' x2='16.24' y2='16.24'/%3e%3cpath d='M2 12h2'/%3e%3cpath d='M20 12h2'/%3e%3cmove-to x='4.93' y='19.07'/%3e%3cline x1='7.76' y1='16.24' x2='4.93' y2='19.07'/%3e%3cmove-to x='16.24' y='7.76'/%3e%3cline x1='19.07' y1='4.93' x2='16.24' y2='7.76'/%3e%3c/svg%3e" class="icon-sm"/>ON
+                    </button>
+                    <button id="btn-off" class="btn btn-secondary px-4 py-2 rounded-md font-medium flex items-center gap-2">
+                         <img src="data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpath d='M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z'/%3e%3c/svg%3e" class="icon-sm"/>OFF
+                    </button>
+                    <button id="btn-add-delay" class="btn btn-secondary px-4 py-2 rounded-md font-medium flex items-center gap-2">
+                        <img src="data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3ccircle cx='12' cy='12' r='10'/%3e%3cpolyline points='12 6 12 12 16 14'/%3e%3c/svg%3e" class="icon-sm"/>Delay...
+                    </button>
+                    <button id="btn-reset" class="btn bg-red-800/50 hover:bg-red-700/50 text-red-300 px-4 py-2 rounded-md font-medium flex items-center gap-2">
+                        <img src="data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpath d='M3 6h18'/%3e%3cpath d='M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2'/%3e%3c/svg%3e" class="icon-sm"/>Reset
+                    </button>
                 </div>
                 <code id="sequence-string" class="block text-gray-500 bg-black/50 p-2 rounded-md text-sm"></code>
             </div>
@@ -159,12 +157,21 @@
     <!-- Toast -->
     <div id="toast" class="p-3 rounded-md text-white text-center opacity-0 transition-opacity duration-300 fixed bottom-5 left-1/2 -translate-x-1/2"></div>
 
+    <!-- Floating Console -->
+    <div id="floating-console" class="fixed bottom-0 left-0 right-0 h-48 bg-black/80 backdrop-blur-sm p-2 text-xs font-mono overflow-y-auto text-white z-50 border-t border-gray-700">
+        <div id="console-header" class="flex justify-between items-center pb-1 mb-1 border-b border-gray-600 sticky top-0 bg-black/80">
+             <span class="font-bold">Floating Console</span>
+             <button id="clear-console-btn" class="bg-gray-700 px-2 py-0.5 rounded text-xs">Clear</button>
+        </div>
+        <div id="console-messages"></div>
+    </div>
+
+
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
         import { getFirestore, doc, setDoc, updateDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
         import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 
-        // Hardcoded Firebase credentials
         const firebaseConfig = {
           apiKey: "AIzaSyDfVTAyQ2VBZKBkVdvrDyouyHTogphx5aI",
           authDomain: "nocturnalmagicbyheri.firebaseapp.com",
@@ -173,6 +180,56 @@
           messagingSenderId: "543858727515",
           appId: "1:543858727515:web:206fe7996a8025df33fd7e"
         };
+
+        // --- Floating Console Setup ---
+        const consoleMessages = document.getElementById('console-messages');
+        const originalConsoleLog = console.log;
+        const originalConsoleError = console.error;
+
+        const logToScreen = (message, type = 'log') => {
+            const el = document.createElement('div');
+            el.classList.add('log-message', type);
+            const formattedMessage = typeof message === 'object' ? JSON.stringify(message) : message;
+            el.textContent = `[${new Date().toLocaleTimeString()}] ${formattedMessage}`;
+            consoleMessages.appendChild(el);
+            consoleMessages.parentElement.scrollTop = consoleMessages.parentElement.scrollHeight;
+        };
+
+        console.log = function(message, ...args) {
+            originalConsoleLog.apply(console, arguments);
+            logToScreen([message, ...args].join(' '), 'log');
+        };
+
+        console.error = function(message, ...args) {
+            originalConsoleError.apply(console, arguments);
+            logToScreen([message, ...args].join(' '), 'error');
+        };
+        
+        document.getElementById('clear-console-btn').addEventListener('click', () => {
+            consoleMessages.innerHTML = '';
+        });
+
+        // --- PWA Debug & SW Message Listener ---
+        try {
+            const manifestLink = document.getElementById('manifestLink');
+            if (manifestLink) {
+                console.log(`[PWA Debug] Manifest href: "${manifestLink.getAttribute('href')}"`);
+                console.log(`[PWA Debug] Page location: "${window.location.pathname}"`);
+                console.log(`[PWA Debug] Resolved manifest URL: "${manifestLink.href}"`);
+            } else {
+              console.error("[PWA Debug] Could not find manifest link element.");
+            }
+            
+            // Listener for messages from the Service Worker
+            navigator.serviceWorker.addEventListener('message', event => {
+                if (event.data && event.data.type === 'LOG') {
+                    logToScreen(event.data.message, 'debug');
+                }
+            });
+
+        } catch(e) {
+            console.error("[PWA Debug] Error during initial logging/listener setup:", e);
+        }
 
         // --- App State ---
         let controlDocRef;
@@ -263,6 +320,10 @@
             const sequencePreview = document.getElementById('sequence-preview');
             const sequenceStringDisplay = document.getElementById('sequence-string');
             const arrowIconSVG = `data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='%236b7280' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='9 18 15 12 9 6'/%3e%3c/svg%3e`;
+            const iconSun = `data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3ccircle cx='12' cy='12' r='4'/%3e%3cpath d='M12 2v2'/%3e%3cpath d='M12 20v2'/%3e%3cmove-to x='4.93' y='4.93'/%3e%3cline x1='7.76' y1='7.76' x2='4.93' y2='4.93'/%3e%3cmove-to x='16.24' y='16.24'/%3e%3cline x1='19.07' y1='19.07' x2='16.24' y2='16.24'/%3e%3cpath d='M2 12h2'/%3e%3cpath d='M20 12h2'/%3e%3cmove-to x='4.93' y='19.07'/%3e%3cline x1='7.76' y1='16.24' x2='4.93' y2='19.07'/%3e%3cmove-to x='16.24' y='7.76'/%3e%3cline x1='19.07' y1='4.93' x2='16.24' y2='7.76'/%3e%3c/svg%3e`;
+            const iconMoon = `data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpath d='M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z'/%3e%3c/svg%3e`;
+            const iconTimer = `data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3ccircle cx='12' cy='12' r='10'/%3e%3cpolyline points='12 6 12 12 16 14'/%3e%3c/svg%3e`;
+
             const renderSequence = () => {
                 sequencePreview.innerHTML = '';
                 if (flashSequence.length === 0) {
@@ -271,16 +332,23 @@
                     flashSequence.forEach((item, index) => {
                         const el = document.createElement('div');
                         el.classList.add('sequence-item');
+                        let iconSVG = '';
+                        let text = '';
+                        
                         if (item === 'on') {
                             el.classList.add('item-on');
-                            el.textContent = 'ON';
+                            iconSVG = iconSun;
+                            text = 'ON';
                         } else if (item === 'off') {
                             el.classList.add('item-off');
-                            el.textContent = 'OFF';
+                            iconSVG = iconMoon;
+                            text = 'OFF';
                         } else {
                             el.classList.add('item-delay');
-                            el.textContent = `${item}ms`;
+                            iconSVG = iconTimer;
+                            text = `${item}ms`;
                         }
+                        el.innerHTML = `<img src="${iconSVG}" class="icon-sm mr-1.5"/> ${text}`;
                         sequencePreview.appendChild(el);
 
                         if (index < flashSequence.length - 1) {
@@ -387,6 +455,7 @@
         // --- PWA Service Worker Registration ---
         if ('serviceWorker' in navigator) {
           window.addEventListener('load', () => {
+            // Updated registration path
             navigator.serviceWorker.register('./service-worker.js', { scope: '/control/' })
               .then((registration) => {
                 console.log('Service Worker: Registration successful with scope: ', registration.scope);
