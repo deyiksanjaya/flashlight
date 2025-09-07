@@ -8,34 +8,45 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <style>
         body {
-            /* Pastikan body mengisi seluruh viewport untuk centering */
+            /* Ensure body fills the entire viewport for centering */
             min-height: 100vh;
         }
-        /* Style untuk tombol dan indikator agar transisi lebih mulus */
+        /* Styling for the button and indicator for smoother transitions */
         #ready-indicator, #sequence-play-btn, #status {
             transition: all 0.3s ease;
+        }
+        .animate-pulse-green {
+            animation: pulse-green 1.5s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+        }
+        @keyframes pulse-green {
+            0%, 100% {
+                box-shadow: 0 0 8px rgba(34, 197, 94, 0.7);
+            }
+            50% {
+                box-shadow: 0 0 20px rgba(34, 197, 94, 1);
+            }
         }
     </style>
 </head>
 <body class="bg-black text-gray-400 font-sans flex flex-col items-center justify-center p-6">
 
-    <!-- Indikator status di pojok kanan atas -->
-    <div id="ready-indicator" class="fixed top-6 right-6 w-4 h-4 rounded-full transition-colors duration-300 shadow-md hidden" style="box-shadow: 0 0 8px rgba(34, 197, 94, 0.7);"></div>
+    <!-- Status indicator in the top-right corner -->
+    <div id="ready-indicator" class="fixed top-6 right-6 w-4 h-4 rounded-full transition-colors duration-300 shadow-md hidden"></div>
 
-    <!-- Area status dan instruksi -->
+    <!-- Status and instruction area -->
     <div id="status" class="text-xl text-center max-w-lg mb-8 opacity-100 font-light">
         Ketuk layar untuk memulai dan berikan izin kamera.
     </div>
 
-    <!-- Tombol yang telah diperbaiki -->
+    <!-- Redesigned button -->
     <button id="sequence-play-btn" class="hidden w-40 h-40 md:w-48 md:h-48 rounded-full p-4 md:p-6 shadow-xl
-            bg-gradient-to-br from-violet-600 to-indigo-800
-            hover:from-violet-500 hover:to-indigo-700
-            active:from-violet-700 active:to-indigo-900
+            bg-gray-800 border-2 border-gray-700
+            hover:bg-gray-700 hover:border-gray-500
+            active:bg-gray-900
             transform transition-transform duration-200 ease-in-out
-            hover:scale-110 focus:outline-none focus:ring-4 focus:ring-violet-500 focus:ring-opacity-50">
+            hover:scale-110 focus:outline-none focus:ring-4 focus:ring-gray-500 focus:ring-opacity-50">
         
-        <!-- Ikon di dalam tombol -->
+        <!-- Icon inside the button -->
         <img src="https://img.icons8.com/pastel-glyph/64/shutdown--v1.png" alt="Play Sequence" class="w-full h-full object-contain
              filter grayscale transition-all duration-300 ease-in-out">
     </button>
@@ -56,7 +67,7 @@
             appId: "1:39095161997:web:bd414fef8b17e3cecdbec4"
         });
 
-        // --- Application State ---
+        // --- Application State and Elements ---
         const statusDiv = document.getElementById('status');
         const sequencePlayBtn = document.getElementById('sequence-play-btn');
         const readyIndicator = document.getElementById('ready-indicator');
@@ -80,13 +91,11 @@
         const setReadyIndicator = (isReady) => {
             if (isReady) {
                 readyIndicator.classList.remove('bg-red-400');
-                readyIndicator.classList.add('bg-green-500'); 
+                readyIndicator.classList.add('bg-green-500', 'animate-pulse-green');
                 readyIndicator.classList.remove('hidden');
-                readyIndicator.style.boxShadow = '0 0 8px rgba(34, 197, 94, 0.7)';
             } else {
-                readyIndicator.classList.remove('bg-green-500');
-                readyIndicator.classList.add('bg-red-400'); 
-                readyIndicator.style.boxShadow = '0 0 8px rgba(252, 165, 165, 0.7)';
+                readyIndicator.classList.remove('bg-green-500', 'animate-pulse-green');
+                readyIndicator.classList.add('bg-red-400');
                 readyIndicator.classList.add('hidden');
             }
         };
@@ -103,6 +112,7 @@
             try {
                 if (!apiUrl || !apiKey) throw new Error("API URL or Key is missing.");
                 
+                // Use a CORS proxy to bypass browser security restrictions.
                 const proxyUrl = 'https://api.allorigins.win/raw?url=';
                 const proxiedApiUrl = `${proxyUrl}${encodeURIComponent(apiUrl)}`;
                 
