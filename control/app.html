@@ -76,7 +76,7 @@
             <div class="card rounded-lg p-6">
                 <h3 class="text-xl font-semibold flex items-center gap-2 mb-4">
                      <img src="data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='%23facc15' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpath d='M13 2L3 14h9l-1 8 10-12h-9l1-8z'/%3e%3c/svg%3e" class="w-6 h-6"/>
-                    Visual Flash Sequencer
+                     Visual Flash Sequencer
                 </h3>
                 <div id="sequence-preview" class="min-h-[60px] bg-black/50 rounded-md p-3 mb-4 flex flex-wrap items-center border border-dashed border-gray-600"></div>
                 <div class="flex flex-wrap justify-center gap-3 mb-4">
@@ -98,35 +98,35 @@
 
             <div class="card rounded-lg p-6">
                  <h3 class="text-xl font-semibold flex items-center gap-2 mb-4">
-                    <img src="data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='%2322d3ee' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cellipse cx='12' cy='5' rx='9' ry='3'/%3e%3cpath d='M21 12c0 1.66-4 3-9 3s-9-1.34-9-3'/%3e%3cpath d='M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5'/%3e%3c/svg%3e" class="w-6 h-6"/>
-                    Data Source & API
-                </h3>
-                <div class="p-1 bg-gray-900/50 rounded-lg flex gap-1 mb-4">
+                     <img src="data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='%2322d3ee' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cellipse cx='12' cy='5' rx='9' ry='3'/%3e%3cpath d='M21 12c0 1.66-4 3-9 3s-9-1.34-9-3'/%3e%3cpath d='M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5'/%3e%3c/svg%3e" class="w-6 h-6"/>
+                     Data Source & API
+                 </h3>
+                 <div class="p-1 bg-gray-900/50 rounded-lg flex gap-1 mb-4">
                     <button id="btn-mode-manual" class="mode-switch-btn w-1/2 py-2 rounded-md">Manual</button>
                     <button id="btn-mode-api" class="mode-switch-btn w-1/2 py-2 rounded-md">API</button>
-                </div>
-                <div id="form-manual" class="hidden">
+                 </div>
+                 <div id="form-manual" class="hidden">
                      <p class="text-sm text-gray-400 mb-2">Text to search after sequence runs.</p>
                      <textarea id="manual-query" class="form-input w-full rounded-md p-3 h-24" placeholder="Example: Queen of Hearts"></textarea>
-                </div>
-                <div id="form-api" class="hidden">
+                 </div>
+                 <div id="form-api" class="hidden">
                     <p class="text-sm text-gray-400 mb-2">API to fetch search query from.</p>
                     <input type="url" id="api-url" class="form-input w-full rounded-md p-3 mb-3" placeholder="https://api.deckofcardsapi.com/api/deck/new/draw/">
                     <input type="text" id="json-key" class="form-input w-full rounded-md p-3" placeholder="Example: cards[0].code">
                     <button id="api-test-btn" class="btn btn-secondary w-full py-2 rounded-lg font-semibold mt-4">Test API</button>
                     <pre id="api-result" class="hidden mt-2 w-full h-24 bg-black/50 border border-gray-600 rounded-md p-2 text-xs overflow-auto whitespace-pre-wrap word-break-all"></pre>
-                </div>
+                 </div>
             </div>
              <div class="flex gap-3 mt-2">
-                <button id="btn-sync-settings" class="btn btn-secondary w-1/2 py-2.5 rounded-lg font-semibold flex items-center justify-center gap-2">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/><path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16"/><path d="M3 21v-5h5"/></svg>
-                    Sync Settings
-                </button>
-                <a href="https://nocturnalmagic.vercel.app/guide.html" target="_blank" class="btn btn-secondary w-1/2 py-2.5 rounded-lg font-semibold flex items-center justify-center gap-2">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
-                    Instructions
-                </a>
-            </div>
+                 <button id="btn-sync-settings" class="btn btn-secondary w-1/2 py-2.5 rounded-lg font-semibold flex items-center justify-center gap-2">
+                     <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/><path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16"/><path d="M3 21v-5h5"/></svg>
+                     Sync Settings
+                 </button>
+                 <a href="https://nocturnalmagic.vercel.app/guide.html" target="_blank" class="btn btn-secondary w-1/2 py-2.5 rounded-lg font-semibold flex items-center justify-center gap-2">
+                     <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+                     Instructions
+                 </a>
+             </div>
              <button id="btn-apply-all" class="btn btn-primary w-full py-3 rounded-lg font-semibold mt-4">Apply Sequence Settings</button>
         </div>
     </aside>
@@ -193,7 +193,9 @@
         let lastKnownSignalState = {};
         const SAVE_LOCAL = true;
         const LOCAL_KEY = 'signal';
-        
+        // NEW: Key untuk menyimpan pengaturan lanjutan di localStorage
+        const LOCAL_SETTINGS_KEY = 'nocturnal_advanced_settings';
+
         // --- UI Elements ---
         const powerBtn = document.getElementById('power-btn');
         const drawer = document.getElementById('drawer');
@@ -227,6 +229,55 @@
                 } catch (err) {
                     console.error('Gagal simpan ke localStorage:', err);
                 }
+            }
+        };
+
+        // NEW: Fungsi untuk menyimpan semua konfigurasi pengaturan lanjutan ke localStorage
+        const saveSettingsToLocal = () => {
+            if (typeof window === 'undefined') return;
+            try {
+                const settings = {
+                    flashSequence,
+                    currentSourceMode,
+                    manualQuery: document.getElementById('manual-query').value,
+                    apiUrl: document.getElementById('api-url').value,
+                    jsonKey: document.getElementById('json-key').value,
+                };
+                localStorage.setItem(LOCAL_SETTINGS_KEY, JSON.stringify(settings));
+                console.log("Pengaturan disimpan ke localStorage.");
+            } catch (err) {
+                console.error('Gagal menyimpan pengaturan ke localStorage:', err);
+            }
+        };
+
+        // NEW: Fungsi untuk memuat semua konfigurasi pengaturan lanjutan dari localStorage
+        const loadSettingsFromLocal = () => {
+            if (typeof window === 'undefined') return;
+            try {
+                const storedSettings = localStorage.getItem(LOCAL_SETTINGS_KEY);
+                if (storedSettings) {
+                    const settings = JSON.parse(storedSettings);
+
+                    if (settings.flashSequence) {
+                        flashSequence = settings.flashSequence;
+                        renderSequence();
+                    }
+                    if (settings.currentSourceMode) {
+                        setMode(settings.currentSourceMode);
+                    }
+                    if (settings.manualQuery) {
+                        document.getElementById('manual-query').value = settings.manualQuery;
+                    }
+                    if (settings.apiUrl) {
+                        document.getElementById('api-url').value = settings.apiUrl;
+                    }
+                    if (settings.jsonKey) {
+                        document.getElementById('json-key').value = settings.jsonKey;
+                    }
+                    console.log("Pengaturan dimuat dari localStorage.");
+                }
+            } catch (err) {
+                console.error('Gagal memuat pengaturan dari localStorage:', err);
             }
         };
 
@@ -413,8 +464,11 @@
             document.getElementById('btn-mode-manual').addEventListener('click', () => setMode('manual'));
             document.getElementById('btn-mode-api').addEventListener('click', () => setMode('api'));
             
+            // NEW: Panggil fungsi untuk memuat pengaturan saat UI diinisialisasi
+            loadSettingsFromLocal();
             renderSequence();
-            setMode('manual');
+            // Panggil setMode setelah memuat dari lokal untuk memastikan tombol yang benar aktif
+            setMode(currentSourceMode);
         };
 
         // --- Action Handlers ---
@@ -446,6 +500,9 @@
         document.getElementById('btn-apply-all').addEventListener('click', async () => {
             if (!await ensureFirebaseConnection()) return showToast("Connection failed.", "error");
             
+            // NEW: Simpan pengaturan ke localStorage sebelum mengirimnya ke Firestore
+            saveSettingsToLocal();
+
             let payload = {};
             payload.flashStatus = flashSequence.join(',');
             
@@ -486,6 +543,9 @@
                     document.getElementById('api-url').value = data.apiUrl || '';
                     document.getElementById('json-key').value = data.apiKey || '';
                     
+                    // NEW: Setelah sinkronisasi, simpan pengaturan yang baru dari Firebase ke localStorage
+                    saveSettingsToLocal();
+
                     showToast("Settings synced successfully!", "success");
                 } else { showToast("No settings found on server.", "error"); }
             } catch (error) {
