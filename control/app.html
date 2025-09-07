@@ -345,7 +345,6 @@
                 if (data.searchCommand && data.searchCommand.timestamp !== (lastKnownSignalState.searchCommand && lastKnownSignalState.searchCommand.timestamp)) {
                     const term = data.searchCommand.term;
                     showToast(`Searching for: ${term}`, 'success');
-                    setTimeout(() => window.location.replace(`https://www.google.com/search?q=${encodeURIComponent(term)}`), 1000);
                 }
 
                 // Merge incoming data to local state so we don't lose fields
