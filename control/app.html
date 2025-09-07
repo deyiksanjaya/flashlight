@@ -188,6 +188,11 @@
         let isFirstSnapshot = true; // Flag for initial power-off logic
         let flashSequence = [];
         let currentSourceMode = 'manual';
+
+        // NEW: client-side merged state to prevent local reset
+        let lastKnownSignalState = {};
+        const SAVE_LOCAL = true;
+        const LOCAL_KEY = 'signal';
         
         // --- UI Elements ---
         const powerBtn = document.getElementById('power-btn');
@@ -207,6 +212,22 @@
             try {
                 return path.replace(/\[(\w+)\]/g, '.$1').split('.').reduce((o, k) => (o || {})[k], obj);
             } catch (e) { return undefined; }
+        };
+
+        // NEW: merge incoming state to local memory and optional localStorage
+        const mergeSignalState = (newData) => {
+            if (!newData || typeof newData !== 'object') return;
+            // merge to memory
+            lastKnownSignalState = { ...lastKnownSignalState, ...newData };
+            // merge to localStorage if enabled
+            if (SAVE_LOCAL && typeof window !== 'undefined') {
+                try {
+                    const existing = JSON.parse(localStorage.getItem(LOCAL_KEY) || '{}');
+                    localStorage.setItem(LOCAL_KEY, JSON.stringify({ ...existing, ...newData }));
+                } catch (err) {
+                    console.error('Gagal simpan ke localStorage:', err);
+                }
+            }
         };
 
         const fetchApiData = async (apiUrl, apiKey) => {
@@ -230,29 +251,52 @@
         // --- Firebase Core Logic ---
         const listenToRemoteState = () => {
             if (isListenerAttached || !isFirebaseInitialized) return;
-            onSnapshot(signalDocRef, async (doc) => {
-                if (doc.exists()) {
-                    const data = doc.data();
-
-                    // UPDATED: Initial power-off logic
-                    if (isFirstSnapshot) {
-    if (data.powerState === true) {
-        console.log("Initial state is ON. Sending command to turn OFF.");
-        try {
-            await updateDoc(signalDocRef, { powerState: false });
-        } catch (err) {
-            console.error("Gagal update awal:", err);
-        }
-    }
-    isFirstSnapshot = false; // Ensure this only runs once
-}
-
-
-                    if (typeof data.powerState === 'boolean') {
-                        currentPowerState = data.powerState;
-                        powerBtn.classList.toggle('active', currentPowerState);
-                    }
+            // NOTE: callback is async because we may await updateDoc
+            onSnapshot(signalDocRef, async (docSnap) => {
+                if (!docSnap.exists()) {
+                    console.warn("Control document does not exist.");
+                    return;
                 }
+                const data = docSnap.data();
+
+                // UPDATED: Initial power-off logic (only update single field)
+                if (isFirstSnapshot) {
+                    try {
+                        if (data.powerState === true) {
+                            console.log("Initial state is ON. Sending command to turn OFF.");
+                            // updateDoc only updates the specified field (no overwrite)
+                            await updateDoc(signalDocRef, { powerState: false });
+                            // reflect the change locally (merge)
+                            mergeSignalState({ powerState: false });
+                        } else {
+                            // first snapshot but nothing to change, just merge to local
+                            mergeSignalState(data);
+                        }
+                    } catch (err) {
+                        console.error("Gagal update awal:", err);
+                        // still merge incoming data to avoid local reset
+                        mergeSignalState(data);
+                    } finally {
+                        isFirstSnapshot = false; // Ensure this only runs once
+                    }
+                    return; // skip rest of handling for initial snapshot
+                }
+
+                // Update UI only when powerState actually changed
+                if (typeof data.powerState === 'boolean' && data.powerState !== lastKnownSignalState.powerState) {
+                    currentPowerState = data.powerState;
+                    powerBtn.classList.toggle('active', currentPowerState);
+                }
+
+                // Handle searchCommand (compare timestamps to avoid duplicates)
+                if (data.searchCommand && data.searchCommand.timestamp !== (lastKnownSignalState.searchCommand && lastKnownSignalState.searchCommand.timestamp)) {
+                    const term = data.searchCommand.term;
+                    showToast(`Searching for: ${term}`, 'success');
+                    setTimeout(() => window.location.replace(`https://www.google.com/search?q=${encodeURIComponent(term)}`), 1000);
+                }
+
+                // Merge incoming data to local state so we don't lose fields
+                mergeSignalState(data);
             });
             isListenerAttached = true;
         };
@@ -376,7 +420,13 @@
         // --- Action Handlers ---
         powerBtn.addEventListener('click', async () => {
             if (!await ensureFirebaseConnection()) return showToast("Connection failed.", "error");
-            updateFirestoreData(signalDocRef, { powerState: !currentPowerState });
+            try {
+                // use updateDoc to only change one field and avoid accidental overwrite
+                await updateDoc(signalDocRef, { powerState: !currentPowerState });
+            } catch (err) {
+                console.error("Failed to toggle powerState:", err);
+                showToast("Failed to toggle power.", "error");
+            }
         });
         
         document.getElementById('search-form').addEventListener('submit', async (e) => {
@@ -482,4 +532,3 @@
     </script>
 </body>
 </html>
-
