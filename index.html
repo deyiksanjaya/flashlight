@@ -3,95 +3,190 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>Layar Hitam</title>
+    <title>Senter Jarak Jauh (Realtime DB)</title>
     <style>
-        /* Make the entire page a black, clickable area */
         html, body {
             margin: 0;
             padding: 0;
             width: 100%;
             height: 100%;
             background-color: #000;
+            color: #555;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            text-align: center;
             cursor: pointer;
-            /* Prevents the blue flash on tap in some mobile browsers */
             -webkit-tap-highlight-color: transparent;
+        }
+        #status {
+            font-size: 1.2rem;
+            padding: 20px;
+        }
+        #status span {
+            color: #888;
+            font-weight: bold;
         }
     </style>
 </head>
 <body>
-    <!-- The body is intentionally left empty. The whole screen is the button. -->
 
-    <script>
-        // State variables to track the status
+    <div id="status">Ketuk layar untuk memulai dan memberikan izin kamera.</div>
+
+    <!-- Import Firebase SDKs -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+        // Ganti ke Realtime Database SDK
+        import { getDatabase, ref, onValue } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
+        import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+
+        // --- KONFIGURASI FIREBASE ---
+        // Variabel ini akan diganti oleh Vercel saat proses build.
+        // Pastikan Anda mengatur Environment Variables di Vercel dengan nama
+        // VITE_FIREBASE_API_KEY, VITE_FIREBASE_AUTH_DOMAIN, dll.
+        const firebaseConfig = {
+          apiKey: "%VITE_FIREBASE_API_KEY%",
+          authDomain: "%VITE_FIREBASE_AUTH_DOMAIN%",
+          databaseURL: "%VITE_FIREBASE_DATABASE_URL%", // Penting untuk Realtime DB
+          projectId: "%VITE_FIREBASE_PROJECT_ID%",
+          storageBucket: "%VITE_FIREBASE_STORAGE_BUCKET%",
+          messagingSenderId: "%VITE_FIREBASE_MESSAGING_SENDER_ID%",
+          appId: "%VITE_FIREBASE_APP_ID%"
+        };
+
+        // --- Elemen & Variabel Status ---
+        const statusDiv = document.getElementById('status');
         let hasPermissionBeenGranted = false;
         let isTorchOn = false;
         let mediaStreamTrack = null;
+        let isExecutingSequence = false;
 
-        // The main function that runs on every click/tap
-        const handleScreenTap = async () => {
-            // --- First Tap: Request Permission ---
-            if (!hasPermissionBeenGranted) {
-                try {
-                    // Request access to the rear camera to control the torch
-                    const stream = await navigator.mediaDevices.getUserMedia({
-                        video: { facingMode: 'environment' }
-                    });
-                    
-                    // IMPORTANT: We get the permission but immediately stop the stream.
-                    // This prevents the camera from staying active.
-                    // The permission is now granted for this session.
-                    stream.getTracks().forEach(track => track.stop());
+        // --- Fungsi Utama ---
 
-                    hasPermissionBeenGranted = true;
-                    // Optional: Vibrate slightly to confirm permission was granted
-                    if ('vibrate' in navigator) {
-                        navigator.vibrate(50);
-                    }
-                    console.log("Permission granted. Next tap will toggle the torch.");
-
-                } catch (err) {
-                    console.error("Permission denied or error:", err);
-                    // If permission is denied, we can't do anything else.
-                }
-                return; // End the function here for the first tap
+        // 1. Meminta Izin Kamera (Hanya dijalankan sekali)
+        const requestPermission = async () => {
+            if (hasPermissionBeenGranted) return;
+            
+            updateStatus("Meminta izin kamera...");
+            try {
+                const stream = await navigator.mediaDevices.getUserMedia({
+                    video: { facingMode: 'environment' }
+                });
+                stream.getTracks().forEach(track => track.stop());
+                hasPermissionBeenGranted = true;
+                updateStatus("Izin diberikan. Menghubungkan ke server...");
+                initializeFirebaseListener(); // Lanjut ke koneksi Firebase
+            } catch (err) {
+                console.error("Izin ditolak:", err);
+                updateStatus("Izin kamera ditolak. Aplikasi tidak dapat berfungsi.");
             }
+        };
 
-            // --- Subsequent Taps: Toggle the Torch ---
-            if (isTorchOn) {
-                // Turn the torch OFF
-                if (mediaStreamTrack) {
-                    mediaStreamTrack.stop(); // Stop the camera track completely
-                    mediaStreamTrack = null;
-                }
-                isTorchOn = false;
-                console.log("Torch OFF");
-            } else {
-                // Turn the torch ON
-                try {
-                    const stream = await navigator.mediaDevices.getUserMedia({
-                        video: { facingMode: 'environment' }
-                    });
-                    
-                    mediaStreamTrack = stream.getVideoTracks()[0];
-                    
-                    // Apply constraints to turn on the torch
-                    await mediaStreamTrack.applyConstraints({
-                        advanced: [{ torch: true }]
-                    });
+        // 2. Inisialisasi Firebase dan Listener (Menggunakan Realtime Database)
+        const initializeFirebaseListener = async () => {
+            try {
+                const app = initializeApp(firebaseConfig);
+                const db = getDatabase(app); // Menggunakan getDatabase
+                const auth = getAuth(app);
 
-                    isTorchOn = true;
-                    console.log("Torch ON");
+                await signInAnonymously(auth);
 
-                } catch (err) {
-                    console.error("Could not turn on torch:", err);
-                    // Reset state if it fails
-                    hasPermissionBeenGranted = false; 
+                const controlSignalRef = ref(db, 'currentData/controlSignal'); // Menggunakan ref
+
+                updateStatus("Terhubung. Menunggu sinyal kontrol...");
+
+                // Menggunakan onValue untuk mendengarkan perubahan
+                onValue(controlSignalRef, (snapshot) => {
+                    if (isExecutingSequence) {
+                        console.log("Sedang menjalankan perintah, sinyal baru diabaikan.");
+                        return;
+                    }
+
+                    if (snapshot.exists()) {
+                        const data = snapshot.val();
+                        const command = data.flashStatus;
+                        if (command) {
+                            console.log("Perintah diterima:", command);
+                            updateStatus(`Perintah diterima: <span>${command}</span>`);
+                            executeCommandSequence(command);
+                        }
+                    } else {
+                        console.log("Node kontrol tidak ditemukan di database!");
+                        updateStatus("Node kontrol tidak ditemukan di server.");
+                    }
+                });
+
+            } catch (error) {
+                console.error("Gagal terhubung ke Firebase:", error);
+                if (firebaseConfig.apiKey.startsWith("%VITE_")) {
+                    updateStatus("Kesalahan: Konfigurasi Firebase belum diisi. Harap atur di Vercel Environment Variables.");
+                } else {
+                    updateStatus("Gagal terhubung ke server. Periksa konsol untuk detail.");
                 }
             }
         };
 
-        // Attach the event listener to the entire document
-        document.documentElement.addEventListener('click', handleScreenTap);
+        // 3. Eksekusi Perintah yang Diterima (Tidak ada perubahan)
+        const executeCommandSequence = async (sequence) => {
+            isExecutingSequence = true;
+            const commands = sequence.split(',');
+
+            for (const cmd of commands) {
+                const command = cmd.trim().toLowerCase();
+                if (command === 'on') {
+                    await toggleTorch(true);
+                } else if (command === 'off') {
+                    await toggleTorch(false);
+                } else {
+                    const delay = parseInt(command, 10);
+                    if (!isNaN(delay)) {
+                        updateStatus(`Jeda selama <span>${delay}</span> ms...`);
+                        await sleep(delay);
+                    }
+                }
+            }
+            isExecutingSequence = false;
+            updateStatus("Selesai. Menunggu sinyal kontrol berikutnya...");
+        };
+
+        // 4. Fungsi untuk Menyalakan/Mematikan Senter (Tidak ada perubahan)
+        const toggleTorch = async (turnOn) => {
+            if (turnOn === isTorchOn) return;
+
+            if (turnOn) {
+                updateStatus("Senter: <span>ON</span>");
+                try {
+                    const stream = await navigator.mediaDevices.getUserMedia({
+                        video: { facingMode: 'environment' }
+                    });
+                    mediaStreamTrack = stream.getVideoTracks()[0];
+                    await mediaStreamTrack.applyConstraints({
+                        advanced: [{ torch: true }]
+                    });
+                    isTorchOn = true;
+                } catch (err) {
+                    console.error("Gagal menyalakan senter:", err);
+                    updateStatus("Gagal menyalakan senter.");
+                }
+            } else {
+                updateStatus("Senter: <span>OFF</span>");
+                if (mediaStreamTrack) {
+                    mediaStreamTrack.stop();
+                    mediaStreamTrack = null;
+                }
+                isTorchOn = false;
+            }
+        };
+
+        // --- Fungsi Helper ---
+        const sleep = ms => new Promise(resolve => setTimeout(resolve, ms));
+        const updateStatus = (message) => {
+            statusDiv.innerHTML = message;
+        };
+
+        // --- Event Listener Awal ---
+        document.documentElement.addEventListener('click', requestPermission, { once: true });
     </script>
 </body>
 </html>
