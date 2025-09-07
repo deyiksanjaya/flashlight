@@ -455,8 +455,8 @@
         // --- PWA Service Worker Registration ---
         if ('serviceWorker' in navigator) {
           window.addEventListener('load', () => {
-            // Updated registration path
-            navigator.serviceWorker.register('/control/service-worker.js', { scope: '/control/' })
+            // CORRECTED: Use an absolute path from the root for the service worker
+            navigator.serviceWorker.register('/service-worker.js', { scope: '/control/' })
               .then((registration) => {
                 console.log('Service Worker: Registration successful with scope: ', registration.scope);
               })
