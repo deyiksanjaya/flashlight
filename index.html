@@ -99,26 +99,24 @@
         const statusDiv = document.getElementById('status');
         const sequencePlayBtn = document.getElementById('sequence-play-btn');
         const readyIndicator = document.getElementById('ready-indicator');
-        
+        
         let hasPermissionBeenGranted = false;
         let isTorchOn = false;
         let mediaStreamTrack = null;
         let isExecutingSequence = false;
-        let lastKnownSignalState = {}; 
-        let sequenceData = null; 
-        let fetchedApiResult = null;
-        let isRemoteListenerAttached = false;
-        let isSequenceListenerAttached = false;
-
+        let lastKnownSignalState = {}; 
+        let clickTimeout = null;
+        let clickCount = 0;
+        let isFirebaseInitialized = false;
         let db, auth;
-        const modeDocRef = doc(db, 'control', 'mode');
-        const signalDocRef = doc(db, 'control', 'signal');
-        const sequenceDocRef = doc(db, 'control', 'sequence');
+        let sequenceData = null; 
+        let fetchedApiResult = null;
 
         // --- Helper Functions ---
         const updateStatus = (message) => { statusDiv.innerHTML = message; };
         const sleep = ms => new Promise(resolve => setTimeout(resolve, ms));
 
+        // NEW: Function to toggle the ready indicator
         const setReadyIndicator = (isReady) => {
             if (isReady) {
                 readyIndicator.style.backgroundColor = '#22c55e'; // Green
@@ -142,22 +140,28 @@
         const fetchApiData = async (apiUrl, apiKey) => {
             try {
                 if (!apiUrl || !apiKey) throw new Error("API URL or Key is missing.");
+                
+                // FIXED: Use a CORS proxy to bypass browser security restrictions.
                 const proxyUrl = 'https://api.allorigins.win/raw?url=';
                 const proxiedApiUrl = `${proxyUrl}${encodeURIComponent(apiUrl)}`;
+                
                 const response = await fetch(proxiedApiUrl);
+                
                 if (!response.ok) {
                      throw new Error(`API returned a non-200 status: ${response.status}`);
                 }
                 const data = await response.json();
                 const result = getValueFromPath(data, apiKey);
+                
                 if (result === undefined) {
                     throw new Error(`Key "${apiKey}" was not found in the API's JSON response.`);
                 }
                 return { success: true, data: result };
             } catch (error) {
                 console.error("API Fetch Error:", error);
+                // Return a more descriptive error message
                 let userFriendlyError = error.message;
-                if (error instanceof TypeError) { 
+                if (error instanceof TypeError) { // Often indicates a CORS or network error
                     userFriendlyError = "Network error or CORS issue. Check browser console for details.";
                 }
                 return { success: false, error: userFriendlyError };
@@ -199,14 +203,29 @@
                 return false;
             }
         };
-        
-        // --- Core Logic for Mode Listeners ---
+        
+        const ensureFirebaseConnection = async () => {
+            if (isFirebaseInitialized) return true;
+            try {
+                const app = initializeApp(firebaseConfig);
+                db = getFirestore(app);
+                auth = getAuth(app);
+                await signInAnonymously(auth);
+                isFirebaseInitialized = true;
+                return true;
+            } catch(error) {
+                console.error("Firebase Initialization Error:", error);
+                updateStatus("Failed to connect to the server.");
+                return false;
+            }
+        };
+
         const executeCommandSequence = async () => {
             if (!sequenceData || isExecutingSequence) return;
             isExecutingSequence = true;
             sequencePlayBtn.style.display = 'none';
-            setReadyIndicator(false); 
-            
+            setReadyIndicator(false); // NEW: Hide indicator when sequence starts
+            
             let finalSearchQuery = null;
             if (sequenceData.source === 'api') {
                 if (fetchedApiResult && fetchedApiResult.success) {
@@ -216,7 +235,7 @@
                     updateStatus(`Cannot start. API data failed to load: <span>${errorMessage}</span>`);
                     isExecutingSequence = false;
                     sequencePlayBtn.style.display = 'flex';
-                    setReadyIndicator(true); 
+                    setReadyIndicator(true); // NEW: Show indicator if start failed
                     return;
                 }
             } else {
@@ -240,7 +259,7 @@
                     }
                 }
             }
-            
+            
             if (finalSearchQuery) {
                 updateStatus(`Sequence finished. Searching for: <span>${finalSearchQuery}</span>...`);
                 setTimeout(() => {
@@ -249,23 +268,30 @@
             } else {
                  updateStatus("Sequence finished. Awaiting next command...");
                  sequencePlayBtn.style.display = 'flex';
-                 setReadyIndicator(true); 
+                 setReadyIndicator(true); // NEW: Show indicator when sequence is finished
             }
             isExecutingSequence = false;
         };
-        
-        // NEW: Firebase Listener Functions
-        const listenForRemoteCommands = () => {
-            if (isRemoteListenerAttached) return;
-            
-            onSnapshot(signalDocRef, (snapshot) => {
+        
+        // --- Mode Initializers ---
+        const startRemoteControlMode = async () => {
+            document.documentElement.removeEventListener('click', handleModeSelection);
+            setReadyIndicator(false); // NEW: Hide indicator when remote control starts
+            updateStatus("<span>Remote Control Mode</span> activated. Awaiting commands...");
+            if (!await ensureFirebaseConnection()) return;
+            
+            const controlDocRef = doc(db, 'control', 'signal');
+            let isFirstSnapshot = true; 
+
+            onSnapshot(controlDocRef, (snapshot) => {
                 if (!snapshot.exists()) return console.error("Control document does not exist.");
+                
                 const data = snapshot.data();
-                // Initial state check
-                if (!lastKnownSignalState.powerState) {
+                if (isFirstSnapshot) {
                     lastKnownSignalState = data;
+                    isFirstSnapshot = false;
                     if (data.powerState !== undefined) toggleTorch(data.powerState);
-                    setReadyIndicator(true); 
+                    setReadyIndicator(true); // NEW: Show indicator when remote control listener is active
                     return; 
                 }
                 if (data.powerState !== undefined && data.powerState !== lastKnownSignalState.powerState) {
@@ -279,83 +305,81 @@
                 }
                 lastKnownSignalState = data;
             });
-            isRemoteListenerAttached = true;
         };
 
-        const listenForSequenceData = () => {
-            if (isSequenceListenerAttached) return;
+        const startSequenceMode = () => {
+            document.documentElement.removeEventListener('click', handleModeSelection);
+            
+            if (sequenceData && sequenceData.source === 'api' && fetchedApiResult && !fetchedApiResult.success) {
+                 updateStatus(`API data failed to load: <span>${fetchedApiResult.error}</span>. Waiting for new settings.`);
+            } else if (sequenceData) {
+                updateStatus("Sequence data loaded. Press the button to start.");
+            } else {
+                updateStatus("<span>Sequence Mode</span> activated. Waiting for data...");
+            }
+
+            statusDiv.style.display = 'block';
+            sequencePlayBtn.style.display = 'flex';
+            sequencePlayBtn.onclick = executeCommandSequence;
+        };
+        
+        const preloadSequenceData = async () => {
+            if (!await ensureFirebaseConnection()) return;
+            const sequenceDocRef = doc(db, 'control', 'sequence');
             onSnapshot(sequenceDocRef, async (snapshot) => {
                 if (snapshot.exists()) {
                     sequenceData = snapshot.data();
                     console.log("Pre-loaded sequence data.", sequenceData);
-                    
+                    
                     if (sequenceData.source === 'api') {
                         updateStatus("Sequence data loaded. Pre-fetching API data...");
                         fetchedApiResult = await fetchApiData(sequenceData.apiUrl, sequenceData.apiKey);
                         if(fetchedApiResult.success) {
-                            setReadyIndicator(true); 
-                            updateStatus("Sequence data loaded. Press the button to start.");
+                            setReadyIndicator(true); // NEW: Show indicator on successful API fetch
                         } else {
-                            setReadyIndicator(false); 
+                            setReadyIndicator(false); // NEW: Set indicator to unready on API fetch fail
                             updateStatus(`API pre-fetch failed: <span>${fetchedApiResult.error}</span>`);
                         }
                     } else if (sequenceData) {
-                        updateStatus("Sequence data loaded. Press the button to start.");
-                        setReadyIndicator(true);
+                         setReadyIndicator(true); // NEW: Show indicator when data is loaded
                     }
                 } else {
                     console.log("No sequence data found on server to preload.");
                     sequenceData = null;
                     fetchedApiResult = null;
-                    setReadyIndicator(false);
-                    updateStatus("Waiting for sequence data...");
+                    setReadyIndicator(false); // NEW: Set indicator to unready when no data is found
                 }
             });
-            isSequenceListenerAttached = true;
         };
 
-        const initializeFirebaseAndListeners = async () => {
-            updateStatus("Connecting to server...");
-            try {
-                const app = initializeApp(firebaseConfig);
-                db = getFirestore(app);
-                auth = getAuth(app);
-                await signInAnonymously(auth);
-                
-                // NEW: Listen for changes in the app mode
-                onSnapshot(doc(db, 'control', 'mode'), (docSnap) => {
-                    const data = docSnap.data();
-                    const mode = data?.mode || 'remote'; // Default to remote if not found
-                    console.log("Mode received:", mode);
-
-                    if (mode === 'remote') {
-                        updateStatus("<span>Remote Control Mode</span> activated. Awaiting commands...");
-                        sequencePlayBtn.style.display = 'none';
-                        listenForRemoteCommands();
-                    } else if (mode === 'sequence') {
-                        updateStatus("<span>Sequence Mode</span> activated. Waiting for data...");
-                        sequencePlayBtn.style.display = 'flex';
-                        sequencePlayBtn.onclick = executeCommandSequence;
-                        listenForSequenceData();
-                    }
-                });
-                
-                updateStatus("Successfully connected. Awaiting mode selection.");
-                setReadyIndicator(true);
-            } catch(error) {
-                console.error("Firebase Initialization Error:", error);
-                updateStatus("Failed to connect to the server.");
-                setReadyIndicator(false);
+        // --- Tap Detection Logic ---
+        const handleModeSelection = () => {
+            clickCount++;
+            if (clickCount === 1) {
+                clickTimeout = setTimeout(() => {
+                    clickCount = 0;
+                    startSequenceMode(); // Single tap
+                }, 300);
+            } else if (clickCount === 2) {
+                clearTimeout(clickTimeout);
+                clickCount = 0;
+                startRemoteControlMode(); // Double tap
             }
+        };
+        const setupModeSelection = () => {
+            updateStatus("Choose Mode:<br><span>Single Tap</span> for Sequence<br><span>Double Tap</span> for Remote Control");
+            document.documentElement.addEventListener('click', handleModeSelection);
         };
 
         // --- Initializer ---
         document.documentElement.addEventListener('click', async () => {
             const permissionGranted = await requestPermission();
             if (permissionGranted) {
-                initializeFirebaseAndListeners();
+                setupModeSelection();
             }
         }, { once: true });
+        
+        preloadSequenceData();
     </script>
 </body>
 </html>
