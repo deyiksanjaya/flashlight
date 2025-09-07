@@ -110,11 +110,11 @@
                      <textarea id="manual-query" class="form-input w-full rounded-md p-3 h-24" placeholder="Example: Queen of Hearts"></textarea>
                  </div>
                  <div id="form-api" class="hidden">
-                    <p class="text-sm text-gray-400 mb-2">API to fetch search query from.</p>
-                    <input type="url" id="api-url" class="form-input w-full rounded-md p-3 mb-3" placeholder="https://api.deckofcardsapi.com/api/deck/new/draw/">
-                    <input type="text" id="json-key" class="form-input w-full rounded-md p-3" placeholder="Example: cards[0].code">
-                    <button id="api-test-btn" class="btn btn-secondary w-full py-2 rounded-lg font-semibold mt-4">Test API</button>
-                    <pre id="api-result" class="hidden mt-2 w-full h-24 bg-black/50 border border-gray-600 rounded-md p-2 text-xs overflow-auto whitespace-pre-wrap word-break-all"></pre>
+                     <p class="text-sm text-gray-400 mb-2">API to fetch search query from.</p>
+                     <input type="url" id="api-url" class="form-input w-full rounded-md p-3 mb-3" placeholder="https://api.deckofcardsapi.com/api/deck/new/draw/">
+                     <input type="text" id="json-key" class="form-input w-full rounded-md p-3" placeholder="Example: cards[0].code">
+                     <button id="api-test-btn" class="btn btn-secondary w-full py-2 rounded-lg font-semibold mt-4">Test API</button>
+                     <pre id="api-result" class="hidden mt-2 w-full h-24 bg-black/50 border border-gray-600 rounded-md p-2 text-xs overflow-auto whitespace-pre-wrap word-break-all"></pre>
                  </div>
             </div>
              <div class="flex gap-3 mt-2">
@@ -133,11 +133,24 @@
 
     <!-- Main Content -->
     <div class="relative h-full flex flex-col items-center justify-center p-4">
+        <!-- Setting Button (restored) -->
         <button id="settings-btn" class="absolute top-4 left-4 text-white z-10">
             <img src="data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='white' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3ccircle cx='12' cy='12' r='3'/%3e%3cpath d='M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z'/%3e%3c/svg%3e" class="w-8 h-8"/>
         </button>
-        
-        <div class="flex flex-col items-center gap-12 w-full max-w-sm">
+
+        <!-- Dropdown to select mode -->
+        <div class="fixed top-4 left-1/2 -translate-x-1/2 z-20">
+            <select id="mode-selector" class="form-input rounded-full px-4 py-2 text-sm text-center appearance-none cursor-pointer">
+                <option value="remote">Remote Control</option>
+                <option value="sequence">Sequence Settings</option>
+            </select>
+            <div class="absolute inset-y-0 right-2 flex items-center pr-2 pointer-events-none">
+                <svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+            </div>
+        </div>
+
+        <!-- Remote Control Panel -->
+        <div id="remote-control-panel" class="w-full flex flex-col items-center gap-12 max-w-sm">
             <button id="power-btn" class="power-button flex items-center justify-center">
                 <img src="https://img.icons8.com/pastel-glyph/64/shutdown--v1.png" alt="Power" class="w-24 h-24"/>
             </button>
@@ -146,11 +159,17 @@
                 <button type="submit" class="btn btn-primary w-full py-3 rounded-md font-semibold">Search</button>
             </form>
         </div>
+
+        <!-- Sequence Settings Panel (Hidden by default) -->
+        <div id="sequence-panel" class="w-full flex flex-col items-center justify-center gap-6 max-w-sm hidden">
+             <h2 class="text-xl font-semibold text-center text-gray-400">Sequence Mode</h2>
+            <p class="text-gray-500 text-center">Use the gear icon to create and apply a flash sequence.</p>
+        </div>
     </div>
 
     <!-- Modal Jeda -->
     <div id="delay-modal-overlay" class="fixed inset-0 bg-black/70 flex items-center justify-center p-4 hidden z-50">
-         <div class="bg-[#1a1a1a] border border-[#2a2a2a] rounded-lg p-6 w-full max-w-sm shadow-2xl">
+        <div class="bg-[#1a1a1a] border border-[#2a2a2a] rounded-lg p-6 w-full max-w-sm shadow-2xl">
             <h3 class="text-xl font-semibold mb-4">Set Delay Duration</h3>
             <p class="text-sm text-gray-400 mb-2">Enter duration in seconds.</p>
             <input type="number" id="delay-input" class="form-input w-full rounded-md p-3" placeholder="Example: 1.5">
@@ -183,25 +202,31 @@
 
         // --- App State ---
         let db;
-        let signalDocRef, sequenceDocRef;
+        let signalDocRef, sequenceDocRef, modeDocRef;
         let isFirebaseInitialized = false;
         let isListenerAttached = false;
         let currentPowerState = false;
         let isFirstSnapshot = true; // Flag for initial power-off logic
         let flashSequence = [];
         let currentSourceMode = 'manual';
+        let currentAppMode = 'remote'; // NEW: State for app mode
 
         // NEW: client-side merged state to prevent local reset
         let lastKnownSignalState = {};
         const SAVE_LOCAL = true;
         const LOCAL_KEY = 'signal';
-        // NEW: Key untuk menyimpan pengaturan lanjutan di localStorage
+        // NEW: Key untuk menyimpan pengaturan lanjutan ke localStorage
         const LOCAL_SETTINGS_KEY = 'nocturnal_advanced_settings';
 
         // --- UI Elements ---
         const powerBtn = document.getElementById('power-btn');
         const drawer = document.getElementById('drawer');
         const backdrop = document.getElementById('drawer-backdrop');
+        
+        // NEW: UI elements for mode selector
+        const modeSelector = document.getElementById('mode-selector');
+        const remotePanel = document.getElementById('remote-control-panel');
+        const sequencePanel = document.getElementById('sequence-panel');
         
         // --- Helper Functions ---
         const showToast = (message, type = 'success') => {
@@ -353,6 +378,20 @@
             isListenerAttached = true;
         };
 
+        // NEW: listen for changes to the app mode
+        const listenToAppMode = () => {
+            if (!isFirebaseInitialized) return;
+            onSnapshot(modeDocRef, (docSnap) => {
+                const data = docSnap.data();
+                if (data && data.mode) {
+                    currentAppMode = data.mode;
+                    modeSelector.value = currentAppMode;
+                    updateUIForMode(currentAppMode);
+                    showToast(`Mode switched to ${currentAppMode}.`, 'success');
+                }
+            });
+        };
+
         const initializeFirebase = async () => {
             if (isFirebaseInitialized) return true;
             try {
@@ -362,8 +401,10 @@
                 await signInAnonymously(auth);
                 signalDocRef = doc(db, 'control', 'signal');
                 sequenceDocRef = doc(db, 'control', 'sequence');
+                modeDocRef = doc(db, 'control', 'mode'); // NEW: Get mode document reference
                 isFirebaseInitialized = true;
                 listenToRemoteState();
+                listenToAppMode();
                 return true;
             } catch (error) {
                 console.error("Firebase Initialization Error:", error);
@@ -387,6 +428,17 @@
             return await initializeFirebase();
         };
 
+        // NEW: Function to update UI based on selected mode
+        const updateUIForMode = (mode) => {
+            if (mode === 'remote') {
+                remotePanel.classList.remove('hidden');
+                sequencePanel.classList.add('hidden');
+            } else if (mode === 'sequence') {
+                remotePanel.classList.add('hidden');
+                sequencePanel.classList.remove('hidden');
+            }
+        };
+
         // --- UI Initialization (OFFLINE-SAFE) ---
         const initializeUI = () => {
             const openDrawer = () => {
@@ -397,6 +449,7 @@
                 drawer.classList.add('-translate-x-full');
                 backdrop.classList.add('hidden');
             };
+            // Restored event listener for the settings button
             document.getElementById('settings-btn').addEventListener('click', openDrawer);
             document.getElementById('close-drawer-btn').addEventListener('click', closeDrawer);
             backdrop.addEventListener('click', closeDrawer);
@@ -520,6 +573,7 @@
 
             if(success) {
                 showToast("Advanced settings applied!", "success");
+                await updateFirestoreData(modeDocRef, { mode: 'sequence' }); // NEW: update mode to 'sequence'
                 document.getElementById('close-drawer-btn').click();
             }
         });
@@ -574,9 +628,17 @@
             }
         });
 
+        // NEW: Event listener for the mode selector dropdown
+        modeSelector.addEventListener('change', async (e) => {
+            const newMode = e.target.value;
+            await updateFirestoreData(modeDocRef, { mode: newMode });
+            updateUIForMode(newMode);
+        });
+
         // --- Start the App ---
         initializeUI();
         ensureFirebaseConnection();
+        updateUIForMode(currentAppMode); // Set initial UI mode
 
         // --- PWA Service Worker Registration ---
         if ('serviceWorker' in navigator) {
