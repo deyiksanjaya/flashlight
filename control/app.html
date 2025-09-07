@@ -369,18 +369,17 @@
             }
         });
         
-        // --- Start the App ---
-        initializeUI();
-        ensureFirebaseConnection(); // Attempt to connect in the background on load
-
-        if ('serviceWorker' in navigator) {
+        // --- PWA Service Worker Registration ---
+if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
-    navigator.serviceWorker.register('./control/service-worker.js')
+    // Gunakan './' untuk memastikan path relatif terhadap file saat ini (app.html)
+    // dan tentukan scope secara eksplisit agar sesuai dengan manifest Anda.
+    navigator.serviceWorker.register('./service-worker.js', { scope: '/control/' })
       .then((registration) => {
-        console.log('Service Worker berhasil didaftarkan dengan cakupan:', registration.scope);
+        console.log('Service Worker: Registration successful with scope: ', registration.scope);
       })
       .catch((error) => {
-        console.error('Pendaftaran Service Worker gagal:', error);
+        console.log('Service Worker: Registration failed: ', error);
       });
   });
 }
