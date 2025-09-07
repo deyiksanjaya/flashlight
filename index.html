@@ -15,6 +15,7 @@
             color: #a0a0a0;
             font-family: 'Inter', sans-serif;
             display: flex;
+            flex-direction: column;
             justify-content: center;
             align-items: center;
             text-align: center;
@@ -25,15 +26,34 @@
             font-size: 1.2rem;
             padding: 20px;
             max-width: 80%;
+            transition: opacity 0.3s ease;
         }
         #status span {
             color: #e5e5e5;
             font-weight: bold;
         }
+        #sequence-play-btn {
+            display: none; /* Hidden by default */
+            width: 120px;
+            height: 120px;
+            background-color: #2a2a2a;
+            border: 2px solid #4a4a4a;
+            border-radius: 50%;
+            color: white;
+            font-size: 50px;
+            line-height: 120px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+        #sequence-play-btn:hover {
+            border-color: #4f46e5;
+            box-shadow: 0 0 20px rgba(79, 70, 229, 0.5);
+        }
     </style>
 </head>
 <body>
     <div id="status">Tap the screen to start and grant camera permission.</div>
+    <div id="sequence-play-btn">▶</div>
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
@@ -52,22 +72,23 @@
 
         // --- Application State ---
         const statusDiv = document.getElementById('status');
+        const sequencePlayBtn = document.getElementById('sequence-play-btn');
+        
         let hasPermissionBeenGranted = false;
         let isTorchOn = false;
         let mediaStreamTrack = null;
         let isExecutingSequence = false;
-        let lastKnownState = {}; // To prevent re-running old commands
+        let lastKnownSignalState = {}; 
+        let clickTimeout = null;
+        let clickCount = 0;
 
         // --- Helper Functions ---
-        const updateStatus = (message) => {
-            statusDiv.innerHTML = message;
-        };
+        const updateStatus = (message) => { statusDiv.innerHTML = message; };
         const sleep = ms => new Promise(resolve => setTimeout(resolve, ms));
 
         // --- Core Flashlight Logic ---
         const toggleTorch = async (turnOn) => {
             if (turnOn === isTorchOn || !hasPermissionBeenGranted) return;
-
             if (turnOn) {
                 updateStatus("Torch Status: <span>ON</span>");
                 try {
@@ -75,10 +96,7 @@
                     mediaStreamTrack = stream.getVideoTracks()[0];
                     await mediaStreamTrack.applyConstraints({ advanced: [{ torch: true }] });
                     isTorchOn = true;
-                } catch (err) {
-                    console.error("Failed to turn on torch:", err);
-                    updateStatus("Failed to turn on torch.");
-                }
+                } catch (err) { console.error("Failed to turn on torch:", err); updateStatus("Failed to turn on torch."); }
             } else {
                 updateStatus("Torch Status: <span>OFF</span>");
                 if (mediaStreamTrack) {
@@ -91,14 +109,11 @@
 
         const requestPermission = async () => {
             if (hasPermissionBeenGranted) return true;
-            
             updateStatus("Requesting camera permission...");
             try {
-                // We only need to get the stream once to grant permission.
                 const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } });
-                stream.getTracks().forEach(track => track.stop()); // Immediately stop the track
+                stream.getTracks().forEach(track => track.stop());
                 hasPermissionBeenGranted = true;
-                updateStatus("Permission granted. Initializing...");
                 return true;
             } catch (err) {
                 console.error("Permission denied:", err);
@@ -108,8 +123,9 @@
         };
 
         const executeCommandSequence = async (commandData) => {
-            if (!commandData || !commandData.flashStatus) return;
+            if (!commandData || !commandData.flashStatus || isExecutingSequence) return;
             isExecutingSequence = true;
+            sequencePlayBtn.style.display = 'none';
             
             const sequence = commandData.flashStatus;
             updateStatus(`Executing sequence: <span>${sequence}</span>`);
@@ -117,11 +133,9 @@
 
             for (const cmd of commands) {
                 const command = cmd.trim().toLowerCase();
-                if (command === 'on') {
-                    await toggleTorch(true);
-                } else if (command === 'off') {
-                    await toggleTorch(false);
-                } else {
+                if (command === 'on') await toggleTorch(true);
+                else if (command === 'off') await toggleTorch(false);
+                else {
                     const delay = parseInt(command, 10);
                     if (!isNaN(delay)) {
                         updateStatus(`Pausing for <span>${delay}</span> ms...`);
@@ -130,8 +144,7 @@
                 }
             }
             
-            // After sequence, check for search query
-            const searchQuery = commandData.value || commandData.searchQuery; // backward compatibility
+            const searchQuery = commandData.value;
             if (searchQuery) {
                 updateStatus(`Sequence finished. Searching for: <span>${searchQuery}</span>...`);
                 setTimeout(() => {
@@ -139,73 +152,125 @@
                 }, 1500);
             } else {
                  updateStatus("Sequence finished. Awaiting next command...");
+                 sequencePlayBtn.style.display = 'block'; // Show button again if no search
             }
-
             isExecutingSequence = false;
         };
+        
+        // --- Mode Initializers ---
 
-        const initializeFirebaseListener = async () => {
+        const startRemoteControlMode = async () => {
+            document.documentElement.removeEventListener('click', handleModeSelection);
+            updateStatus("<span>Remote Control Mode</span> activated. Awaiting commands...");
             try {
                 const app = initializeApp(firebaseConfig);
                 const db = getFirestore(app);
                 const auth = getAuth(app);
-
                 await signInAnonymously(auth);
                 const controlDocRef = doc(db, 'control', 'signal');
-                updateStatus("Connected. Awaiting commands...");
+                
+                let isFirstSnapshot = true; // Flag to ignore the initial data state
 
                 onSnapshot(controlDocRef, (snapshot) => {
-                    if (!snapshot.exists()) {
-                        console.error("Control document does not exist.");
-                        return;
-                    }
+                    if (!snapshot.exists()) return console.error("Control document does not exist.");
                     
                     const data = snapshot.data();
 
-                    // --- Handle Commands based on timestamp changes ---
+                    // On the very first connection, just store the state and do nothing.
+                    if (isFirstSnapshot) {
+                        lastKnownSignalState = data;
+                        isFirstSnapshot = false;
+                        // Synchronize the torch state on initial load without triggering a search
+                        if (data.powerState !== undefined) {
+                            toggleTorch(data.powerState);
+                        }
+                        return; 
+                    }
 
-                    // 1. Handle Direct Power Toggle
-                    if (data.powerState !== undefined && data.powerState !== lastKnownState.powerState) {
-                        console.log(`Direct power command received: ${data.powerState ? 'ON' : 'OFF'}`);
+                    // For all subsequent changes, check for differences.
+                    if (data.powerState !== undefined && data.powerState !== lastKnownSignalState.powerState) {
                         toggleTorch(data.powerState);
                     }
-
-                    // 2. Handle Direct Search Command
-                    if (data.searchCommand?.timestamp !== lastKnownState.searchCommand?.timestamp) {
+                    if (data.searchCommand?.timestamp !== lastKnownSignalState.searchCommand?.timestamp) {
                         const term = data.searchCommand.term;
-                        console.log(`Direct search command received: ${term}`);
                         updateStatus(`Searching for: <span>${term}</span>...`);
                         setTimeout(() => window.location.replace(`https://www.google.com/search?q=${encodeURIComponent(term)}`), 1000);
-                        return; // Stop further processing after redirect
-                    }
-                    
-                    // 3. Handle Advanced Sequence Command
-                    if (data.sequenceCommand?.timestamp !== lastKnownState.sequenceCommand?.timestamp) {
-                        console.log("New sequence command received.");
-                         if (isExecutingSequence) {
-                            console.log("Busy with a sequence, ignoring new one.");
-                            return;
-                        }
-                        executeCommandSequence(data.sequenceCommand);
+                        return;
                     }
 
-                    // Update the last known state to prevent re-triggering commands on minor doc updates
-                    lastKnownState = data;
+                    // Update the state for the next comparison
+                    lastKnownSignalState = data;
+                });
+            } catch (error) {
+                console.error("Failed to connect for Remote Control Mode:", error);
+                updateStatus("Failed to connect to the server.");
+            }
+        };
+
+        const startSequenceMode = async () => {
+            document.documentElement.removeEventListener('click', handleModeSelection);
+            updateStatus("<span>Sequence Mode</span> activated. Waiting for sequence data...");
+            sequencePlayBtn.style.display = 'block';
+            let sequenceData = null;
+
+            try {
+                const app = initializeApp(firebaseConfig);
+                const db = getFirestore(app);
+                const auth = getAuth(app);
+                await signInAnonymously(auth);
+                const sequenceDocRef = doc(db, 'control', 'sequence'); // New document
+                
+                onSnapshot(sequenceDocRef, (snapshot) => {
+                    if (snapshot.exists()) {
+                        updateStatus("Sequence data loaded. Press ▶ to start.");
+                        sequenceData = snapshot.data();
+                    } else {
+                        updateStatus("No sequence data found on server.");
+                        sequenceData = null;
+                    }
                 });
 
+                sequencePlayBtn.onclick = () => {
+                    if (sequenceData) {
+                        executeCommandSequence(sequenceData);
+                    } else {
+                        updateStatus("Cannot start. No sequence data available.");
+                    }
+                };
             } catch (error) {
-                console.error("Failed to connect to Firebase:", error);
-                updateStatus("Failed to connect to the server. Check console for details.");
+                console.error("Failed to connect for Sequence Mode:", error);
+                updateStatus("Failed to connect to the server.");
             }
+        };
+        
+        // --- Tap Detection Logic ---
+        const handleModeSelection = () => {
+            clickCount++;
+            if (clickCount === 1) {
+                clickTimeout = setTimeout(() => {
+                    clickCount = 0;
+                    startSequenceMode(); // Single tap
+                }, 300); // 300ms window for double tap
+            } else if (clickCount === 2) {
+                clearTimeout(clickTimeout);
+                clickCount = 0;
+                startRemoteControlMode(); // Double tap
+            }
+        };
+
+        const setupModeSelection = () => {
+            updateStatus("Choose Mode:<br><span>Single Tap</span> for Sequence<br><span>Double Tap</span> for Remote Control");
+            document.documentElement.addEventListener('click', handleModeSelection);
         };
 
         // --- Initializer ---
         document.documentElement.addEventListener('click', async () => {
             const permissionGranted = await requestPermission();
             if (permissionGranted) {
-                initializeFirebaseListener();
+                setupModeSelection();
             }
         }, { once: true });
     </script>
 </body>
 </html>
+
