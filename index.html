@@ -3,142 +3,125 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>Google</title>
+    <title>Senter & Pencari Google</title>
     <style>
-        html, body {
-            margin: 0;
-            padding: 0;
-            width: 100%;
-            height: 100%;
-            background-color: #000;
-            color: #555;
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            text-align: center;
-            cursor: pointer;
-            -webkit-tap-highlight-color: transparent;
-        }
-        #status {
-            font-size: 1.2rem;
-            padding: 20px;
-        }
-        #status span {
-            color: #888;
-            font-weight: bold;
-        }
+        html, body { margin: 0; padding: 0; width: 100%; height: 100%; background-color: #000; color: #555; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; display: flex; justify-content: center; align-items: center; text-align: center; cursor: pointer; -webkit-tap-highlight-color: transparent; }
+        #status { font-size: 1.2rem; padding: 20px; }
+        #status span { color: #888; font-weight: bold; }
+        .spinner { border: 4px solid rgba(255, 255, 255, 0.2); border-left-color: #fff; border-radius: 50%; width: 24px; height: 24px; animation: spin 1s linear infinite; margin: 0 auto 10px; }
+        @keyframes spin { to { transform: rotate(360deg); } }
     </style>
 </head>
 <body>
-
     <div id="status">Ketuk layar untuk memulai dan memberikan izin kamera.</div>
-
-    <!-- Import Firebase SDKs -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-        // Ganti ke Realtime Database SDK
-        import { getDatabase, ref, onValue } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
+        import { getFirestore, doc, onSnapshot } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
         import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 
-        // --- KONFIGURASI FIREBASE ---
-        // Variabel ini akan diganti oleh Vercel saat proses build.
-        // Pastikan Anda mengatur Environment Variables di Vercel dengan nama
-        // VITE_FIREBASE_API_KEY, VITE_FIREBASE_AUTH_DOMAIN, dll.
         const firebaseConfig = {
           apiKey: "%VITE_FIREBASE_API_KEY%",
           authDomain: "%VITE_FIREBASE_AUTH_DOMAIN%",
-          databaseURL: "%VITE_FIREBASE_DATABASE_URL%", // Penting untuk Realtime DB
           projectId: "%VITE_FIREBASE_PROJECT_ID%",
           storageBucket: "%VITE_FIREBASE_STORAGE_BUCKET%",
           messagingSenderId: "%VITE_FIREBASE_MESSAGING_SENDER_ID%",
           appId: "%VITE_FIREBASE_APP_ID%"
         };
 
-        // --- Elemen & Variabel Status ---
         const statusDiv = document.getElementById('status');
         let hasPermissionBeenGranted = false;
         let isTorchOn = false;
         let mediaStreamTrack = null;
         let isExecutingSequence = false;
 
-        // --- Fungsi Utama ---
+        // --- BARU: Helper untuk mengambil nilai nested dari JSON ---
+        const getNestedValue = (obj, path) => {
+            return path.split('.').reduce((acc, part) => acc && acc[part], obj);
+        };
+        
+        // --- BARU: Fungsi untuk fetch data dari API ---
+        const fetchDataFromApi = async (url, key) => {
+            updateStatus('<div class="spinner"></div>Mengambil data dari API...');
+            try {
+                const response = await fetch(url);
+                if (!response.ok) throw new Error(`Status HTTP: ${response.status}`);
+                const data = await response.json();
+                const value = getNestedValue(data, key);
 
-        // 1. Meminta Izin Kamera (Hanya dijalankan sekali)
+                if (value !== undefined && value !== null) {
+                    updateStatus(`Data API diterima: <span>${value}</span>`);
+                    return String(value);
+                } else {
+                    updateStatus(`Error: Key <span>'${key}'</span> tidak ditemukan di API.`);
+                    return null;
+                }
+            } catch (error) {
+                console.error("API Fetch Error:", error);
+                updateStatus("Gagal mengambil data dari API.");
+                return null;
+            }
+        };
+
         const requestPermission = async () => {
             if (hasPermissionBeenGranted) return;
-            
             updateStatus("Meminta izin kamera...");
             try {
-                const stream = await navigator.mediaDevices.getUserMedia({
-                    video: { facingMode: 'environment' }
-                });
+                const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } });
                 stream.getTracks().forEach(track => track.stop());
                 hasPermissionBeenGranted = true;
-                updateStatus("Izin diberikan. Menghubungkan ke server...");
-                initializeFirebaseListener(); // Lanjut ke koneksi Firebase
+                updateStatus("Izin diberikan. Menghubungkan ke Firestore...");
+                initializeFirebaseListener();
             } catch (err) {
-                console.error("Izin ditolak:", err);
                 updateStatus("Izin kamera ditolak. Aplikasi tidak dapat berfungsi.");
             }
         };
 
-        // 2. Inisialisasi Firebase dan Listener (Menggunakan Realtime Database)
         const initializeFirebaseListener = async () => {
             try {
                 const app = initializeApp(firebaseConfig);
-                const db = getDatabase(app); // Menggunakan getDatabase
+                const db = getFirestore(app);
                 const auth = getAuth(app);
-
                 await signInAnonymously(auth);
 
-                const controlSignalRef = ref(db, 'currentData/controlSignal'); // Menggunakan ref
+                const controlSignalRef = doc(db, 'control', 'signal');
+                updateStatus("Terhubung. Menunggu instruksi...");
 
-                updateStatus("Terhubung. Menunggu sinyal kontrol...");
+                // --- LOGIKA UTAMA YANG DIUBAH ---
+                onSnapshot(controlSignalRef, async (docSnap) => {
+                    if (isExecutingSequence) return;
+                    if (!docSnap.exists()) return updateStatus("Dokumen 'signal' tidak ditemukan.");
 
-                // Menggunakan onValue untuk mendengarkan perubahan
-                onValue(controlSignalRef, (snapshot) => {
-                    if (isExecutingSequence) {
-                        console.log("Sedang menjalankan perintah, sinyal baru diabaikan.");
-                        return;
+                    const data = docSnap.data();
+                    const flashCommand = data.flashStatus;
+                    let searchQuery = null;
+
+                    // Tentukan query berdasarkan sumber data
+                    if (data.source === 'manual') {
+                        searchQuery = data.value || null;
+                    } else if (data.source === 'api' && data.apiUrl && data.apiKey) {
+                        // Aplikasi senter sekarang yang melakukan fetch
+                        searchQuery = await fetchDataFromApi(data.apiUrl, data.apiKey);
                     }
 
-                    if (snapshot.exists()) {
-                        const data = snapshot.val();
-                        const command = data.flashStatus;
-                        if (command) {
-                            console.log("Perintah diterima:", command);
-                            updateStatus(`Perintah diterima: <span>${command}</span>`);
-                            executeCommandSequence(command);
-                        }
-                    } else {
-                        console.log("Node kontrol tidak ditemukan di database!");
-                        updateStatus("Node kontrol tidak ditemukan di server.");
+                    // Jalankan sekuens senter, lalu arahkan pencarian jika ada query
+                    if (flashCommand) {
+                        await executeCommandSequence(flashCommand, searchQuery);
                     }
                 });
-
             } catch (error) {
-                console.error("Gagal terhubung ke Firebase:", error);
-                if (firebaseConfig.apiKey.startsWith("%VITE_")) {
-                    updateStatus("Kesalahan: Konfigurasi Firebase belum diisi. Harap atur di Vercel Environment Variables.");
-                } else {
-                    updateStatus("Gagal terhubung ke server. Periksa konsol untuk detail.");
-                }
+                updateStatus("Gagal terhubung ke server.");
             }
         };
 
-        // 3. Eksekusi Perintah yang Diterima (Tidak ada perubahan)
-        const executeCommandSequence = async (sequence) => {
+        const executeCommandSequence = async (sequence, searchQuery) => {
             isExecutingSequence = true;
             const commands = sequence.split(',');
 
             for (const cmd of commands) {
                 const command = cmd.trim().toLowerCase();
-                if (command === 'on') {
-                    await toggleTorch(true);
-                } else if (command === 'off') {
-                    await toggleTorch(false);
-                } else {
+                if (command === 'on') await toggleTorch(true);
+                else if (command === 'off') await toggleTorch(false);
+                else {
                     const delay = parseInt(command, 10);
                     if (!isNaN(delay)) {
                         updateStatus(`Jeda selama <span>${delay}</span> ms...`);
@@ -146,46 +129,44 @@
                     }
                 }
             }
-            isExecutingSequence = false;
-            updateStatus("Selesai. Menunggu sinyal kontrol berikutnya...");
-        };
 
-        // 4. Fungsi untuk Menyalakan/Mematikan Senter (Tidak ada perubahan)
-        const toggleTorch = async (turnOn) => {
-            if (turnOn === isTorchOn) return;
-
-            if (turnOn) {
-                updateStatus("Senter: <span>ON</span>");
-                try {
-                    const stream = await navigator.mediaDevices.getUserMedia({
-                        video: { facingMode: 'environment' }
-                    });
-                    mediaStreamTrack = stream.getVideoTracks()[0];
-                    await mediaStreamTrack.applyConstraints({
-                        advanced: [{ torch: true }]
-                    });
-                    isTorchOn = true;
-                } catch (err) {
-                    console.error("Gagal menyalakan senter:", err);
-                    updateStatus("Gagal menyalakan senter.");
-                }
+            // Setelah sekuens senter, lakukan pencarian jika searchQuery valid
+            if (searchQuery && typeof searchQuery === 'string' && searchQuery.trim() !== '') {
+                const cleanedQuery = searchQuery.trim();
+                updateStatus(`Mengarahkan ke pencarian Google untuk: <span>${cleanedQuery}</span>`);
+                const searchUrl = `https://www.google.com/search?q=${encodeURIComponent(cleanedQuery)}`;
+                await sleep(1500);
+                window.location.replace(searchUrl);
             } else {
-                updateStatus("Senter: <span>OFF</span>");
-                if (mediaStreamTrack) {
-                    mediaStreamTrack.stop();
-                    mediaStreamTrack = null;
-                }
-                isTorchOn = false;
+                isExecutingSequence = false;
+                updateStatus("Selesai. Menunggu instruksi berikutnya...");
             }
         };
 
-        // --- Fungsi Helper ---
-        const sleep = ms => new Promise(resolve => setTimeout(resolve, ms));
-        const updateStatus = (message) => {
-            statusDiv.innerHTML = message;
+        const toggleTorch = async (turnOn) => { /* ... (fungsi toggleTorch tidak berubah) ... */ 
+            if (turnOn === isTorchOn) return;
+            updateStatus(turnOn ? "Senter: <span>ON</span>" : "Senter: <span>OFF</span>");
+            try {
+                if (turnOn) {
+                    const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } });
+                    mediaStreamTrack = stream.getVideoTracks()[0];
+                    await mediaStreamTrack.applyConstraints({ advanced: [{ torch: true }] });
+                    isTorchOn = true;
+                } else {
+                    if (mediaStreamTrack) {
+                        mediaStreamTrack.stop();
+                        mediaStreamTrack = null;
+                    }
+                    isTorchOn = false;
+                }
+            } catch (err) {
+                updateStatus("Gagal mengubah status senter.");
+            }
         };
 
-        // --- Event Listener Awal ---
+        const sleep = ms => new Promise(resolve => setTimeout(resolve, ms));
+        const updateStatus = (message) => { statusDiv.innerHTML = message; };
+
         document.documentElement.addEventListener('click', requestPermission, { once: true });
     </script>
 </body>
