@@ -167,7 +167,7 @@
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-        import { getFirestore, doc, setDoc, getDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+        import { getFirestore, doc, setDoc, getDoc, onSnapshot, updateDoc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
         import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 
         const firebaseConfig = {
@@ -236,12 +236,17 @@
 
                     // UPDATED: Initial power-off logic
                     if (isFirstSnapshot) {
-                        if (data.powerState === true) {
-                            console.log("Initial state is ON. Sending command to turn OFF.");
-                            updateFirestoreData(signalDocRef, { powerState: false });
-                        }
-                        isFirstSnapshot = false; // Ensure this only runs once
-                    }
+    if (data.powerState === true) {
+        console.log("Initial state is ON. Sending command to turn OFF.");
+        try {
+            await updateDoc(signalDocRef, { powerState: false });
+        } catch (err) {
+            console.error("Gagal update awal:", err);
+        }
+    }
+    isFirstSnapshot = false; // Ensure this only runs once
+}
+
 
                     if (typeof data.powerState === 'boolean') {
                         currentPowerState = data.powerState;
