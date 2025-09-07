@@ -456,7 +456,7 @@
         if ('serviceWorker' in navigator) {
           window.addEventListener('load', () => {
             // Updated registration path
-            navigator.serviceWorker.register('./service-worker.js', { scope: '/control/' })
+            navigator.serviceWorker.register('/control/service-worker.js', { scope: '/control/' })
               .then((registration) => {
                 console.log('Service Worker: Registration successful with scope: ', registration.scope);
               })
