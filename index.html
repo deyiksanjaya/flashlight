@@ -22,6 +22,19 @@
             cursor: pointer;
             -webkit-tap-highlight-color: transparent;
         }
+        #ready-indicator {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            width: 16px;
+            height: 16px;
+            background-color: #fca5a5; /* Default: red/unready */
+            border-radius: 50%;
+            display: none; /* Hidden by default */
+            transition: background-color 0.3s ease;
+            box-shadow: 0 0 5px rgba(252, 165, 165, 0.5);
+            z-index: 1000;
+        }
         #status {
             font-size: 1.2rem;
             padding: 20px;
@@ -61,6 +74,7 @@
     </style>
 </head>
 <body>
+    <div id="ready-indicator"></div>
     <div id="status">Tap the screen to start and grant camera permission.</div>
     <button id="sequence-play-btn">
         <img src="https://img.icons8.com/pastel-glyph/64/shutdown--v1.png" alt="Play Sequence"/>
@@ -84,6 +98,7 @@
         // --- Application State ---
         const statusDiv = document.getElementById('status');
         const sequencePlayBtn = document.getElementById('sequence-play-btn');
+        const readyIndicator = document.getElementById('ready-indicator');
         
         let hasPermissionBeenGranted = false;
         let isTorchOn = false;
@@ -95,11 +110,24 @@
         let isFirebaseInitialized = false;
         let db, auth;
         let sequenceData = null; 
-        let fetchedApiResult = null; // To store pre-fetched API data
+        let fetchedApiResult = null;
 
         // --- Helper Functions ---
         const updateStatus = (message) => { statusDiv.innerHTML = message; };
         const sleep = ms => new Promise(resolve => setTimeout(resolve, ms));
+
+        // NEW: Function to toggle the ready indicator
+        const setReadyIndicator = (isReady) => {
+            if (isReady) {
+                readyIndicator.style.backgroundColor = '#22c55e'; // Green
+                readyIndicator.style.boxShadow = '0 0 5px rgba(34, 197, 94, 0.5)';
+                readyIndicator.style.display = 'block';
+            } else {
+                readyIndicator.style.backgroundColor = '#fca5a5'; // Red
+                readyIndicator.style.boxShadow = '0 0 5px rgba(252, 165, 165, 0.5)';
+                readyIndicator.style.display = 'none';
+            }
+        };
 
         const getValueFromPath = (obj, path) => {
             try {
@@ -196,6 +224,7 @@
             if (!sequenceData || isExecutingSequence) return;
             isExecutingSequence = true;
             sequencePlayBtn.style.display = 'none';
+            setReadyIndicator(false); // NEW: Hide indicator when sequence starts
             
             let finalSearchQuery = null;
             if (sequenceData.source === 'api') {
@@ -206,6 +235,7 @@
                     updateStatus(`Cannot start. API data failed to load: <span>${errorMessage}</span>`);
                     isExecutingSequence = false;
                     sequencePlayBtn.style.display = 'flex';
+                    setReadyIndicator(true); // NEW: Show indicator if start failed
                     return;
                 }
             } else {
@@ -238,6 +268,7 @@
             } else {
                  updateStatus("Sequence finished. Awaiting next command...");
                  sequencePlayBtn.style.display = 'flex';
+                 setReadyIndicator(true); // NEW: Show indicator when sequence is finished
             }
             isExecutingSequence = false;
         };
@@ -245,6 +276,7 @@
         // --- Mode Initializers ---
         const startRemoteControlMode = async () => {
             document.documentElement.removeEventListener('click', handleModeSelection);
+            setReadyIndicator(false); // NEW: Hide indicator when remote control starts
             updateStatus("<span>Remote Control Mode</span> activated. Awaiting commands...");
             if (!await ensureFirebaseConnection()) return;
             
@@ -259,6 +291,7 @@
                     lastKnownSignalState = data;
                     isFirstSnapshot = false;
                     if (data.powerState !== undefined) toggleTorch(data.powerState);
+                    setReadyIndicator(true); // NEW: Show indicator when remote control listener is active
                     return; 
                 }
                 if (data.powerState !== undefined && data.powerState !== lastKnownSignalState.powerState) {
@@ -302,17 +335,19 @@
                         updateStatus("Sequence data loaded. Pre-fetching API data...");
                         fetchedApiResult = await fetchApiData(sequenceData.apiUrl, sequenceData.apiKey);
                         if(fetchedApiResult.success) {
-                            updateStatus("API data pre-fetched successfully. Ready.");
+                            setReadyIndicator(true); // NEW: Show indicator on successful API fetch
                         } else {
+                            setReadyIndicator(false); // NEW: Set indicator to unready on API fetch fail
                             updateStatus(`API pre-fetch failed: <span>${fetchedApiResult.error}</span>`);
                         }
                     } else if (sequenceData) {
-                         updateStatus("Sequence data loaded. Ready.");
+                         setReadyIndicator(true); // NEW: Show indicator when data is loaded
                     }
                 } else {
                     console.log("No sequence data found on server to preload.");
                     sequenceData = null;
                     fetchedApiResult = null;
+                    setReadyIndicator(false); // NEW: Set indicator to unready when no data is found
                 }
             });
         };
