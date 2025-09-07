@@ -34,33 +34,45 @@
         }
         #sequence-play-btn {
             display: none; /* Hidden by default */
-            width: 120px;
-            height: 120px;
+            width: 150px;
+            height: 150px;
+            padding: 0;
             background-color: #2a2a2a;
             border: 2px solid #4a4a4a;
             border-radius: 50%;
-            color: white;
-            font-size: 50px;
-            line-height: 120px;
             cursor: pointer;
+            transition: all 0.2s ease;
+            display: none; /* Hidden initially */
+            align-items: center;
+            justify-content: center;
+        }
+        #sequence-play-btn img {
+            width: 80px;
+            height: 80px;
+            filter: grayscale(1) brightness(0.8);
             transition: all 0.2s ease;
         }
         #sequence-play-btn:hover {
             border-color: #4f46e5;
             box-shadow: 0 0 20px rgba(79, 70, 229, 0.5);
         }
+        #sequence-play-btn:hover img {
+            filter: grayscale(0) brightness(1);
+        }
     </style>
 </head>
 <body>
     <div id="status">Tap the screen to start and grant camera permission.</div>
-    <div id="sequence-play-btn">▶</div>
+    <button id="sequence-play-btn">
+        <img src="https://img.icons8.com/pastel-glyph/64/shutdown--v1.png" alt="Play Sequence"/>
+    </button>
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
         import { getFirestore, doc, onSnapshot } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
         import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 
-        // Hardcoded Firebase credentials to match the controller app
+        // Hardcoded Firebase credentials
         const firebaseConfig = {
           apiKey: "AIzaSyDfVTAyQ2VBZKBkVdvrDyouyHTogphx5aI",
           authDomain: "nocturnalmagicbyheri.firebaseapp.com",
@@ -81,6 +93,9 @@
         let lastKnownSignalState = {}; 
         let clickTimeout = null;
         let clickCount = 0;
+        let isFirebaseInitialized = false;
+        let db, auth;
+        let sequenceData = null; // To store pre-loaded sequence data
 
         // --- Helper Functions ---
         const updateStatus = (message) => { statusDiv.innerHTML = message; };
@@ -121,13 +136,29 @@
                 return false;
             }
         };
+        
+        const ensureFirebaseConnection = async () => {
+            if (isFirebaseInitialized) return true;
+            try {
+                const app = initializeApp(firebaseConfig);
+                db = getFirestore(app);
+                auth = getAuth(app);
+                await signInAnonymously(auth);
+                isFirebaseInitialized = true;
+                return true;
+            } catch(error) {
+                console.error("Firebase Initialization Error:", error);
+                updateStatus("Failed to connect to the server.");
+                return false;
+            }
+        };
 
-        const executeCommandSequence = async (commandData) => {
-            if (!commandData || !commandData.flashStatus || isExecutingSequence) return;
+        const executeCommandSequence = async () => {
+            if (!sequenceData || !sequenceData.flashStatus || isExecutingSequence) return;
             isExecutingSequence = true;
             sequencePlayBtn.style.display = 'none';
             
-            const sequence = commandData.flashStatus;
+            const sequence = sequenceData.flashStatus;
             updateStatus(`Executing sequence: <span>${sequence}</span>`);
             const commands = sequence.split(',');
 
@@ -144,7 +175,7 @@
                 }
             }
             
-            const searchQuery = commandData.value;
+            const searchQuery = sequenceData.value;
             if (searchQuery) {
                 updateStatus(`Sequence finished. Searching for: <span>${searchQuery}</span>...`);
                 setTimeout(() => {
@@ -152,7 +183,7 @@
                 }, 1500);
             } else {
                  updateStatus("Sequence finished. Awaiting next command...");
-                 sequencePlayBtn.style.display = 'block'; // Show button again if no search
+                 sequencePlayBtn.style.display = 'flex';
             }
             isExecutingSequence = false;
         };
@@ -162,87 +193,60 @@
         const startRemoteControlMode = async () => {
             document.documentElement.removeEventListener('click', handleModeSelection);
             updateStatus("<span>Remote Control Mode</span> activated. Awaiting commands...");
-            try {
-                const app = initializeApp(firebaseConfig);
-                const db = getFirestore(app);
-                const auth = getAuth(app);
-                await signInAnonymously(auth);
-                const controlDocRef = doc(db, 'control', 'signal');
-                
-                let isFirstSnapshot = true; // Flag to ignore the initial data state
+            if (!await ensureFirebaseConnection()) return;
+            
+            const controlDocRef = doc(db, 'control', 'signal');
+            let isFirstSnapshot = true; 
 
-                onSnapshot(controlDocRef, (snapshot) => {
-                    if (!snapshot.exists()) return console.error("Control document does not exist.");
-                    
-                    const data = snapshot.data();
-
-                    // On the very first connection, just store the state and do nothing.
-                    if (isFirstSnapshot) {
-                        lastKnownSignalState = data;
-                        isFirstSnapshot = false;
-                        // Synchronize the torch state on initial load without triggering a search
-                        if (data.powerState !== undefined) {
-                            toggleTorch(data.powerState);
-                        }
-                        return; 
-                    }
-
-                    // For all subsequent changes, check for differences.
-                    if (data.powerState !== undefined && data.powerState !== lastKnownSignalState.powerState) {
-                        toggleTorch(data.powerState);
-                    }
-                    if (data.searchCommand?.timestamp !== lastKnownSignalState.searchCommand?.timestamp) {
-                        const term = data.searchCommand.term;
-                        updateStatus(`Searching for: <span>${term}</span>...`);
-                        setTimeout(() => window.location.replace(`https://www.google.com/search?q=${encodeURIComponent(term)}`), 1000);
-                        return;
-                    }
-
-                    // Update the state for the next comparison
+            onSnapshot(controlDocRef, (snapshot) => {
+                if (!snapshot.exists()) return console.error("Control document does not exist.");
+                const data = snapshot.data();
+                if (isFirstSnapshot) {
                     lastKnownSignalState = data;
-                });
-            } catch (error) {
-                console.error("Failed to connect for Remote Control Mode:", error);
-                updateStatus("Failed to connect to the server.");
-            }
+                    isFirstSnapshot = false;
+                    if (data.powerState !== undefined) toggleTorch(data.powerState);
+                    return; 
+                }
+                if (data.powerState !== undefined && data.powerState !== lastKnownSignalState.powerState) {
+                    toggleTorch(data.powerState);
+                }
+                if (data.searchCommand?.timestamp !== lastKnownSignalState.searchCommand?.timestamp) {
+                    const term = data.searchCommand.term;
+                    updateStatus(`Searching for: <span>${term}</span>...`);
+                    setTimeout(() => window.location.replace(`https://www.google.com/search?q=${encodeURIComponent(term)}`), 1000);
+                    return;
+                }
+                lastKnownSignalState = data;
+            });
         };
 
-        const startSequenceMode = async () => {
+        const startSequenceMode = () => {
             document.documentElement.removeEventListener('click', handleModeSelection);
-            updateStatus("<span>Sequence Mode</span> activated. Waiting for sequence data...");
-            sequencePlayBtn.style.display = 'block';
-            let sequenceData = null;
-
-            try {
-                const app = initializeApp(firebaseConfig);
-                const db = getFirestore(app);
-                const auth = getAuth(app);
-                await signInAnonymously(auth);
-                const sequenceDocRef = doc(db, 'control', 'sequence'); // New document
-                
-                onSnapshot(sequenceDocRef, (snapshot) => {
-                    if (snapshot.exists()) {
-                        updateStatus("Sequence data loaded. Press ▶ to start.");
-                        sequenceData = snapshot.data();
-                    } else {
-                        updateStatus("No sequence data found on server.");
-                        sequenceData = null;
-                    }
-                });
-
-                sequencePlayBtn.onclick = () => {
-                    if (sequenceData) {
-                        executeCommandSequence(sequenceData);
-                    } else {
-                        updateStatus("Cannot start. No sequence data available.");
-                    }
-                };
-            } catch (error) {
-                console.error("Failed to connect for Sequence Mode:", error);
-                updateStatus("Failed to connect to the server.");
+            if (sequenceData) {
+                updateStatus("Sequence data loaded. Press the button to start.");
+            } else {
+                updateStatus("<span>Sequence Mode</span> activated. Waiting for data...");
             }
+            statusDiv.style.display = 'block';
+            sequencePlayBtn.style.display = 'flex';
+            sequencePlayBtn.onclick = executeCommandSequence;
         };
         
+        // --- NEW: Pre-load sequence data on page load ---
+        const preloadSequenceData = async () => {
+            if (!await ensureFirebaseConnection()) return;
+            const sequenceDocRef = doc(db, 'control', 'sequence');
+            onSnapshot(sequenceDocRef, (snapshot) => {
+                if (snapshot.exists()) {
+                    console.log("Pre-loaded sequence data.");
+                    sequenceData = snapshot.data();
+                } else {
+                    console.log("No sequence data found on server to preload.");
+                    sequenceData = null;
+                }
+            });
+        };
+
         // --- Tap Detection Logic ---
         const handleModeSelection = () => {
             clickCount++;
@@ -250,7 +254,7 @@
                 clickTimeout = setTimeout(() => {
                     clickCount = 0;
                     startSequenceMode(); // Single tap
-                }, 300); // 300ms window for double tap
+                }, 300);
             } else if (clickCount === 2) {
                 clearTimeout(clickTimeout);
                 clickCount = 0;
@@ -270,6 +274,9 @@
                 setupModeSelection();
             }
         }, { once: true });
+        
+        // Start pre-loading data as soon as the script runs
+        preloadSequenceData();
     </script>
 </body>
 </html>
