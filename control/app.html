@@ -375,7 +375,7 @@
 
         if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
-    navigator.serviceWorker.register('/control/service-worker.js')
+    navigator.serviceWorker.register('./control/service-worker.js')
       .then((registration) => {
         console.log('Service Worker berhasil didaftarkan dengan cakupan:', registration.scope);
       })
