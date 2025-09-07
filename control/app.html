@@ -13,7 +13,7 @@
     <meta name="apple-mobile-web-app-title" content="Control">
 
     <!-- Link to Manifest in the correct folder -->
-    <link rel="manifest" href="./manifest.json" id="manifestLink">
+    <link rel="manifest" href="./manifest.json">
 
     <!-- Apple Touch Icon (assuming icon is in /icons/ folder) -->
     <link rel="apple-touch-icon" href="/icons/icon192.png">
@@ -58,13 +58,6 @@
             filter: grayscale(0) brightness(1);
         }
         .icon-sm { width: 1rem; height: 1rem; }
-        
-        /* Floating Console Styles */
-        #floating-console { scroll-behavior: smooth; }
-        .log-message { padding: 2px 4px; border-bottom: 1px solid #3a3a3a; word-break: break-all; }
-        .log-message.log { color: #fafafa; }
-        .log-message.error { color: #f87171; font-weight: bold; }
-        .log-message.debug { color: #60a5fa; } /* Blue for SW logs */
     </style>
 </head>
 <body class="overscroll-none">
@@ -75,7 +68,7 @@
         <button id="close-drawer-btn" class="absolute top-4 right-4 text-gray-400 hover:text-white">
             <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
         </button>
-        <h2 class="text-2xl font-bold mb-6">Advanced Settings</h2>
+        <h2 class="text-2xl font-bold mb-6">Advanced Settings (Sequence Mode)</h2>
         
         <div class="space-y-6">
             <div class="card rounded-lg p-6">
@@ -120,7 +113,7 @@
                     <input type="text" id="json-key" class="form-input w-full rounded-md p-3" placeholder="Example: cards[0].code">
                 </div>
             </div>
-             <button id="btn-apply-all" class="btn btn-primary w-full py-3 rounded-lg font-semibold">Apply Advanced Settings</button>
+             <button id="btn-apply-all" class="btn btn-primary w-full py-3 rounded-lg font-semibold">Apply Sequence Settings</button>
         </div>
     </aside>
 
@@ -157,15 +150,6 @@
     <!-- Toast -->
     <div id="toast" class="p-3 rounded-md text-white text-center opacity-0 transition-opacity duration-300 fixed bottom-5 left-1/2 -translate-x-1/2"></div>
 
-    <!-- Floating Console -->
-    <div id="floating-console" class="fixed bottom-0 left-0 right-0 h-48 bg-black/80 backdrop-blur-sm p-2 text-xs font-mono overflow-y-auto text-white z-50 border-t border-gray-700">
-        <div id="console-header" class="flex justify-between items-center pb-1 mb-1 border-b border-gray-600 sticky top-0 bg-black/80">
-             <span class="font-bold">Floating Console</span>
-             <button id="clear-console-btn" class="bg-gray-700 px-2 py-0.5 rounded text-xs">Clear</button>
-        </div>
-        <div id="console-messages"></div>
-    </div>
-
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
@@ -181,58 +165,9 @@
           appId: "1:543858727515:web:206fe7996a8025df33fd7e"
         };
 
-        // --- Floating Console Setup ---
-        const consoleMessages = document.getElementById('console-messages');
-        const originalConsoleLog = console.log;
-        const originalConsoleError = console.error;
-
-        const logToScreen = (message, type = 'log') => {
-            const el = document.createElement('div');
-            el.classList.add('log-message', type);
-            const formattedMessage = typeof message === 'object' ? JSON.stringify(message) : message;
-            el.textContent = `[${new Date().toLocaleTimeString()}] ${formattedMessage}`;
-            consoleMessages.appendChild(el);
-            consoleMessages.parentElement.scrollTop = consoleMessages.parentElement.scrollHeight;
-        };
-
-        console.log = function(message, ...args) {
-            originalConsoleLog.apply(console, arguments);
-            logToScreen([message, ...args].join(' '), 'log');
-        };
-
-        console.error = function(message, ...args) {
-            originalConsoleError.apply(console, arguments);
-            logToScreen([message, ...args].join(' '), 'error');
-        };
-        
-        document.getElementById('clear-console-btn').addEventListener('click', () => {
-            consoleMessages.innerHTML = '';
-        });
-
-        // --- PWA Debug & SW Message Listener ---
-        try {
-            const manifestLink = document.getElementById('manifestLink');
-            if (manifestLink) {
-                console.log(`[PWA Debug] Manifest href: "${manifestLink.getAttribute('href')}"`);
-                console.log(`[PWA Debug] Page location: "${window.location.pathname}"`);
-                console.log(`[PWA Debug] Resolved manifest URL: "${manifestLink.href}"`);
-            } else {
-              console.error("[PWA Debug] Could not find manifest link element.");
-            }
-            
-            // Listener for messages from the Service Worker
-            navigator.serviceWorker.addEventListener('message', event => {
-                if (event.data && event.data.type === 'LOG') {
-                    logToScreen(event.data.message, 'debug');
-                }
-            });
-
-        } catch(e) {
-            console.error("[PWA Debug] Error during initial logging/listener setup:", e);
-        }
-
         // --- App State ---
-        let controlDocRef;
+        let db;
+        let signalDocRef, sequenceDocRef;
         let isFirebaseInitialized = false;
         let isListenerAttached = false;
         let currentPowerState = false;
@@ -256,7 +191,7 @@
         // --- Firebase Core Logic ---
         const listenToRemoteState = () => {
             if (isListenerAttached || !isFirebaseInitialized) return;
-            onSnapshot(controlDocRef, (doc) => {
+            onSnapshot(signalDocRef, (doc) => {
                 if (doc.exists()) {
                     const data = doc.data();
                     if (typeof data.powerState === 'boolean') {
@@ -272,10 +207,11 @@
             if (isFirebaseInitialized) return true;
             try {
                 const app = initializeApp(firebaseConfig);
-                const db = getFirestore(app);
+                db = getFirestore(app);
                 const auth = getAuth(app);
                 await signInAnonymously(auth);
-                controlDocRef = doc(db, 'control', 'signal');
+                signalDocRef = doc(db, 'control', 'signal');
+                sequenceDocRef = doc(db, 'control', 'sequence');
                 isFirebaseInitialized = true;
                 listenToRemoteState();
                 return true;
@@ -285,9 +221,9 @@
             }
         };
         
-        const updateFirestoreData = async (data) => {
+        const updateFirestoreData = async (docRef, data) => {
             try {
-                await setDoc(controlDocRef, data, { merge: true });
+                await setDoc(docRef, data, { merge: true });
                 return true;
             } catch (error) {
                  console.error("Update Error:", error);
@@ -403,7 +339,7 @@
         // --- Action Handlers (Require Firebase Connection) ---
         powerBtn.addEventListener('click', async () => {
             if (!await ensureFirebaseConnection()) return showToast("Connection failed.", "error");
-            updateFirestoreData({ powerState: !currentPowerState });
+            updateFirestoreData(signalDocRef, { powerState: !currentPowerState });
         });
         
         document.getElementById('search-form').addEventListener('submit', async (e) => {
@@ -413,7 +349,7 @@
             const input = document.getElementById('search-input');
             const searchTerm = input.value.trim();
             if (searchTerm) {
-                const success = await updateFirestoreData({ 
+                const success = await updateFirestoreData(signalDocRef, { 
                     searchCommand: { term: searchTerm, timestamp: Date.now() } 
                 });
                 if (success) {
@@ -438,35 +374,35 @@
                 payload.apiKey = document.getElementById('json-key').value;
             }
             
-            const success = await updateFirestoreData({ 
-                sequenceCommand: { ...payload, timestamp: Date.now() } 
-            });
-
-            if(success) {
+            try {
+                await setDoc(sequenceDocRef, payload);
                 showToast("Advanced settings applied!", "success");
                 document.getElementById('close-drawer-btn').click();
+            } catch(error) {
+                showToast("Failed to apply settings.", "error");
+                console.error("Error writing to sequence doc:", error);
             }
         });
         
         // --- Start the App ---
         initializeUI();
-        ensureFirebaseConnection(); // Attempt to connect in the background on load
+        ensureFirebaseConnection();
 
         // --- PWA Service Worker Registration ---
-  if ('serviceWorker' in navigator) {
-    window.addEventListener('load', () => {
-      navigator.serviceWorker.register('./service-worker.js')
-        .then((registration) => {
-          console.log(
-            'Service Worker registered! Scope:',
-            registration.scope
-          );
-        })
-        .catch((error) => {
-          console.error('Service Worker registration failed:', error);
-        });
-    });
-  }
+        if ('serviceWorker' in navigator) {
+          window.addEventListener('load', () => {
+            navigator.serviceWorker.register('./service-worker.js')
+              .then((registration) => {
+                console.log(
+                  'Service Worker registered! Scope:',
+                  registration.scope
+                );
+              })
+              .catch((error) => {
+                console.error('Service Worker registration failed:', error);
+              });
+          });
+        }
     </script>
 </body>
 </html>
