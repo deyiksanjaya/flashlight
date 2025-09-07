@@ -372,6 +372,18 @@
         // --- Start the App ---
         initializeUI();
         ensureFirebaseConnection(); // Attempt to connect in the background on load
+
+        if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('/service-worker.js')
+      .then((registration) => {
+        console.log('Service Worker berhasil didaftarkan dengan cakupan:', registration.scope);
+      })
+      .catch((error) => {
+        console.error('Pendaftaran Service Worker gagal:', error);
+      });
+  });
+}
     </script>
 </body>
 </html>
