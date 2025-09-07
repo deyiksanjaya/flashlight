@@ -281,37 +281,26 @@
         </div>
     </div>
     
-    <script>
+   <script>
   const cards = document.querySelectorAll('.card');
 
-  function highlightActiveCard() {
-    const viewportHeight = window.innerHeight;
-    const middle = viewportHeight / 2;
+  const observer = new IntersectionObserver((entries) => {
+    entries.forEach(entry => {
+      if (entry.isIntersecting) {
+        // Bersihkan highlight semua card
+        cards.forEach(card => card.classList.remove('active-step'));
 
-    let closestCard = null;
-    let closestDistance = Infinity;
-
-    cards.forEach(card => {
-      const rect = card.getBoundingClientRect();
-      const cardMiddle = rect.top + rect.height / 2;
-      const distance = Math.abs(cardMiddle - middle);
-
-      if (distance < closestDistance) {
-        closestDistance = distance;
-        closestCard = card;
+        // Highlight card yang sedang aktif
+        entry.target.classList.add('active-step');
       }
     });
+  }, {
+    root: null,
+    threshold: 0.3 // minimal 30% card kelihatan baru dianggap aktif
+  });
 
-    cards.forEach(card => card.classList.remove('active-step'));
-    if (closestCard) closestCard.classList.add('active-step');
-  }
-
-  // Jalankan sekali di awal
-  highlightActiveCard();
-
-  // Update ketika scroll & resize
-  window.addEventListener('scroll', highlightActiveCard, { passive: true });
-  window.addEventListener('resize', highlightActiveCard);
+  cards.forEach(card => observer.observe(card));
 </script>
+
 </body>
 </html>
