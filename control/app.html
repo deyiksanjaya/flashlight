@@ -230,7 +230,7 @@
         // --- Firebase Core Logic ---
         const listenToRemoteState = () => {
             if (isListenerAttached || !isFirebaseInitialized) return;
-            onSnapshot(signalDocRef, (doc) => {
+            onSnapshot(signalDocRef, async (doc) => {
                 if (doc.exists()) {
                     const data = doc.data();
 
