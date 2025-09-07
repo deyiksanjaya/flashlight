@@ -87,7 +87,7 @@ self.addEventListener('fetch', (event) => {
           console.log('Network request failed, serving app shell from cache.');
           const cache = await caches.open(CACHE_NAME);
           // Always serve app.html for any navigation failure.
-          return await cache.match('app.html');
+          return await cache.match('/control/app.html');
         }
       })()
     );
