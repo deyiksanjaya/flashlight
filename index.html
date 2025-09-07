@@ -168,6 +168,19 @@
         const updateStatus = (message) => { statusDiv.innerHTML = message; };
 
         document.documentElement.addEventListener('click', requestPermission, { once: true });
+
+        // --- PWA Service Worker Registration ---
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('/service-worker.js')
+      .then((registration) => {
+        console.log('Service Worker berhasil didaftarkan dengan cakupan:', registration.scope);
+      })
+      .catch((error) => {
+        console.error('Pendaftaran Service Worker gagal:', error);
+      });
+  });
+}
     </script>
 </body>
 </html>
