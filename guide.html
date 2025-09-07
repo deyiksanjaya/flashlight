@@ -95,7 +95,7 @@
             transition: all 0.3s ease;
         }
 
-        .card:hover .card-header::before {
+        .card.active-step .card-header::before {
             transform: translateY(-50%) scale(1.1);
             border-color: var(--glow-color);
             color: var(--glow-color);
@@ -175,7 +175,7 @@
             <div class="content">
                 <p class="text-lg font-medium text-gray-300 mb-2">The trick works by using two connected web apps.</p>
                 <ul class="list-disc list-inside space-y-2">
-                    <li>Your remote control app and their Receiver App are connected to a single, shared database on Firebase.</li>
+                    <li>Your remote control app and their Receiver Page are connected to a single, shared database on Firebase.</li>
                     <li>When you press the <strong>Power</strong> button, you are simply changing a value in this database from <code>true</code> to <code>false</code> (or vice versa). Their phone is constantly listening for this change and reacts instantly.</li>
                     <li>When you type a name and press <strong>Search</strong>, you update the same database with a new `searchCommand` that contains the name and a timestamp. Their phone sees this update and immediately executes the search.</li>
                 </ul>
@@ -187,12 +187,12 @@
         <div class="card">
             <h3 class="card-header">The Setup: Connecting the Devices</h3>
             <div class="content">
-                <p>The secret of Nocturnal is in two web applications that communicate with each other. You need two devices: one for you (the <strong>remote control app</strong>) and one for the spectator (the <strong>Receiver App</strong>).</p>
+                <p>The secret of Nocturnal is in two web applications that communicate with each other. You need two devices: one for you (the <strong>remote control app</strong>) and one for the spectator (the <strong>Receiver Page</strong>).</p>
                 <ul class="list-disc list-inside mt-3 space-y-2 text-sm">
                     <li><strong>Device 1 (Your Phone):</strong> This is the <strong>remote control app</strong>. It is your hidden command center, controlling the trick from your pocket.</li>
-                    <li><strong>Device 2 (Spectator's Phone):</strong> This is the <strong>Receiver App</strong>. You will use an NFC tag to secretly load it onto the spectator's phone.</li>
+                    <li><strong>Device 2 (Spectator's Phone):</strong> This is the <strong>Receiver Page</strong>. You will use an NFC tag to secretly load it onto the spectator's phone.</li>
                 </ul>
-                <p class="mt-3">Before you begin, open the remote control app on your device and the Receiver App on the spectator's phone. Make sure both are connected to the internet.</p>
+                <p class="mt-3">Before you begin, open the remote control app on your device and the Receiver Page on the spectator's phone. Make sure both are connected to the internet.</p>
             </div>
         </div>
 
@@ -202,16 +202,16 @@
                 <p>This is the standard, two-person performance mode. While you focus on the spectator and misdirection, a trusted assistant or collaborator remotely operates the trick using your phone.</p>
                 <div class="glow-divider"></div>
                 <p><strong>Step 1: Get the Devices Ready</strong><br>
-                You open the Receiver App on the spectator's phone and tap the screen twice. This double-tap activates the app's <strong>Remote Control Mode</strong>, allowing it to listen for your commands.</p>
+                You open the Receiver Page on the spectator's phone. Tap the screen once to grant camera access, then tap twice to activate the page's <strong>Remote Control Mode</strong> and start listening for your commands.</p>
                 <div class="glow-divider"></div>
                 <p><strong>Step 2: The Flashlight Effect</strong><br>
-                Ask the spectator to think of a name of a special person. As they concentrate, the flashlight on their phone will turn on. Your assistant is now waiting for your cue.</p>
+                Ask the spectator to think of the name of a special person. As they concentrate, the flashlight on their phone will turn on. Your assistant is now waiting for your cue.</p>
                 <div class="glow-divider"></div>
                 <p><strong>Step 3: Turning Off the Flashlight</strong><br>
                 With the flashlight on, subtly cue your assistant to press the <strong>Power</strong> button on your remote control app. This sends a command that instantly turns off the light on their device.</p>
                 <div class="glow-divider"></div>
                 <p><strong>Step 4: The Final Reveal</strong><br>
-                Now, you can reveal the final effect. Your assistant types the name they were thinking of into the search bar, and taps <strong>Search</strong>. Their phone will instantly open a Google search with the secret name they had in mind.</p>
+                Now, you can reveal the final effect. Your assistant types the name they were thinking of into the search bar and taps <strong>Search</strong>. Their phone will instantly open a Google search with the secret name they had in mind.</p>
             </div>
         </div>
         
@@ -222,20 +222,111 @@
                 <div class="glow-divider"></div>
                 <p>This mode requires more preparation but offers a hands-free performance. Before the trick, use the Advanced Settings on the <strong>remote control app</strong> to create and apply a custom routine. Your phone serves only as the setup tool; you will not need it during the performance itself.</p>
                 <div class="glow-divider"></div>
-                <p>To use this mode, the magician taps the spectator's screen <strong>once</strong> instead of twice. This will activate Sequence Mode and display a large <strong>Play</strong> button on their screen. While you build your misdirection, you can instruct them to tap the button to start the effect. The app will then execute the pre-programmed routine you created, including the flash sequence and the final Google search.</p>
+                <p>To use this mode, the magician taps the spectator's screen <strong>once</strong>. This initial tap will grant camera access and then display a large <strong>Play</strong> button. While you build your misdirection, you can instruct them to tap the button to start the effect. The page will then execute the pre-programmed routine you created, including the flash sequence and the final Google search.</p>
                 <ul class="list-disc list-inside mt-3 space-y-2 text-sm">
                     <li><strong>Flash Sequencer:</strong> This feature allows you to build a custom pattern of flashes and delays (e.g., ON, OFF, 500ms, ON). The spectator's phone will then execute this exact pattern when they press the Play button.</li>
-                    <li><strong>API Integration:</strong> For an unpredictable element, you can configure the app to fetch a search query from a live API. The app will fetch the data, execute the flash sequence, and then perform a Google search for that fetched data. This is a great way to perform the trick with a different reveal every time.</li>
+                    <li><strong>API Integration:</strong> For an unpredictable element, you can configure the app to fetch a search query from a live API. For example, you can use API services from the famous magic app <strong>Inject</strong> by Greg Rostami. Using Inject, you can set your API and JSON key "value" on the remote control app to integrate this app to your spectator's Google search and reveal it using Nocturnal.</li>
                 </ul>
             </div>
         </div>
 
         <div class="card">
-            <h3 class="card-header">Final Advice: Practice and Timing</h3>
+            <h3 class="card-header">Q & A</h3>
             <div class="content">
-                <p>The magic is not in the technology itself, but in your performance. The technology is a tool to create the illusion of wonder. Practice your timing and your presentation to make the trick feel truly magical. You are now a digital magician.</p>
+                <ul class="list-disc list-inside space-y-4 text-sm">
+                    <li>
+                        <p><strong>Can I perform the trick again with a different person?</strong><br>
+                        Yes. The receiver page is designed to clean itself after a performance, so you can start fresh for a new spectator without worrying about the past performance.</p>
+                    </li>
+                    <li>
+                        <p><strong>Can I use this trick in a place with no internet?</strong><br>
+                        No. The app relies on a live internet connection to communicate between the receiver and the remote control app A stable Wi-Fi or cellular data connection is essential for the trick to work.</p>
+                    </li>
+                    <li>
+                        <p><strong>Does the spectator's phone need a specific browser?</strong><br>
+                        The Receiver Page is designed to work on any modern smartphone browser. For the best performance and compatibility, it is recommended to use the latest version of Chrome, Safari, or Firefox.</p>
+                    </li>
+                    <li>
+                        <p><strong>How do I get the Receiver Page onto the spectator's phone quickly and secretly?</strong><br>
+                        The guide suggests using an NFC tag, but a simple and effective method is to use a QR code or a short URL. By generating a QR code for the Receiver Page's URL, you can have the spectator scan it as part of your presentation, creating a seamless and magical experience.</p>
+                    </li>
+                </ul>
+            </div>
+        </div>
+
+        <div class="card">
+            <h3 class="card-header">Troubleshooting Common Issues</h3>
+            <div class="content">
+                <ul class="list-disc list-inside space-y-4 text-sm">
+                    <li>
+                        <p><strong>The flashlight isn't turning on.</strong><br>
+                        This is often caused by a lost connection. Check the following:
+                        <ul class="list-disc list-inside ml-5 space-y-1 text-xs mt-2">
+                            <li>Is the phone connected to the internet?</li>
+                            <li>Was camera permission granted? The first tap on the screen is crucial for this.</li>
+                        </ul>
+                        </p>
+                    </li>
+                    <li>
+                        <p><strong>The search isn't working at the end.</strong><br>
+                        This is usually caused by a data synchronization issue. The Receiver Page may not have received the command from your remote control app.
+                        <ul class="list-disc list-inside ml-5 space-y-1 text-xs mt-2">
+                            <li>Ensure both pages are connected to the internet. The command cannot be sent or received if the connection is lost.</li>
+                            <li>If using Sequence Mode with an API, use the <strong>Sync Settings</strong> button on the remote control app to re-fetch the data and ensure it's up to date on both devices.</li>
+                        </ul>
+                        </p>
+                    </li>
+                </ul>
             </div>
         </div>
     </div>
+    
+    <script>
+        const cards = document.querySelectorAll('.card');
+
+        const observer = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                const card = entry.target;
+                if (entry.isIntersecting) {
+                    // Check if the card is in the middle third of the viewport
+                    const rect = card.getBoundingClientRect();
+                    const viewportHeight = window.innerHeight;
+                    const topThreshold = viewportHeight * 0.33;
+                    const bottomThreshold = viewportHeight * 0.66;
+                    
+                    if (rect.top >= topThreshold && rect.top <= bottomThreshold) {
+                        card.classList.add('active-step');
+                    } else {
+                        card.classList.remove('active-step');
+                    }
+                } else {
+                    card.classList.remove('active-step');
+                }
+            });
+        }, {
+            root: null,
+            threshold: 0.5, // Trigger when 50% of the element is visible
+        });
+
+        cards.forEach(card => {
+            observer.observe(card);
+        });
+
+        // Add a secondary check on scroll for more responsiveness
+        window.addEventListener('scroll', () => {
+            cards.forEach(card => {
+                const rect = card.getBoundingClientRect();
+                const viewportHeight = window.innerHeight;
+                const topThreshold = viewportHeight * 0.33;
+                const bottomThreshold = viewportHeight * 0.66;
+                
+                if (rect.top >= topThreshold && rect.top <= bottomThreshold) {
+                    card.classList.add('active-step');
+                } else {
+                    card.classList.remove('active-step');
+                }
+            });
+        });
+    </script>
 </body>
 </html>
