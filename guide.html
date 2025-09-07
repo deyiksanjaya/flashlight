@@ -282,51 +282,36 @@
     </div>
     
     <script>
-        const cards = document.querySelectorAll('.card');
+  const cards = document.querySelectorAll('.card');
 
-        const observer = new IntersectionObserver((entries) => {
-            entries.forEach(entry => {
-                const card = entry.target;
-                if (entry.isIntersecting) {
-                    // Check if the card is in the middle third of the viewport
-                    const rect = card.getBoundingClientRect();
-                    const viewportHeight = window.innerHeight;
-                    const topThreshold = viewportHeight * 0.33;
-                    const bottomThreshold = viewportHeight * 0.66;
-                    
-                    if (rect.top >= topThreshold && rect.top <= bottomThreshold) {
-                        card.classList.add('active-step');
-                    } else {
-                        card.classList.remove('active-step');
-                    }
-                } else {
-                    card.classList.remove('active-step');
-                }
-            });
-        }, {
-            root: null,
-            threshold: 0.5, // Trigger when 50% of the element is visible
-        });
+  function highlightActiveCard() {
+    const viewportHeight = window.innerHeight;
+    const middle = viewportHeight / 2;
 
-        cards.forEach(card => {
-            observer.observe(card);
-        });
+    let closestCard = null;
+    let closestDistance = Infinity;
 
-        // Add a secondary check on scroll for more responsiveness
-        window.addEventListener('scroll', () => {
-            cards.forEach(card => {
-                const rect = card.getBoundingClientRect();
-                const viewportHeight = window.innerHeight;
-                const topThreshold = viewportHeight * 0.33;
-                const bottomThreshold = viewportHeight * 0.66;
-                
-                if (rect.top >= topThreshold && rect.top <= bottomThreshold) {
-                    card.classList.add('active-step');
-                } else {
-                    card.classList.remove('active-step');
-                }
-            });
-        });
-    </script>
+    cards.forEach(card => {
+      const rect = card.getBoundingClientRect();
+      const cardMiddle = rect.top + rect.height / 2;
+      const distance = Math.abs(cardMiddle - middle);
+
+      if (distance < closestDistance) {
+        closestDistance = distance;
+        closestCard = card;
+      }
+    });
+
+    cards.forEach(card => card.classList.remove('active-step'));
+    if (closestCard) closestCard.classList.add('active-step');
+  }
+
+  // Jalankan sekali di awal
+  highlightActiveCard();
+
+  // Update ketika scroll & resize
+  window.addEventListener('scroll', highlightActiveCard, { passive: true });
+  window.addEventListener('resize', highlightActiveCard);
+</script>
 </body>
 </html>
