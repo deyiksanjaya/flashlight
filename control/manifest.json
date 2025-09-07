@@ -1,0 +1,16 @@
+{
+"name": "Nocturnal",
+"short_name": "Nocturnal",
+"description": "Manipulating Phone's Torch Using Mind Control",
+"start_url": "./control/app.html",
+"display": "fullscreen",
+"background_color": "#00000",
+"theme_color": "#00000",
+"icons": [
+{
+"src": "icon.png",
+"sizes": "any",
+"type": "image/png"
+}
+]
+}
