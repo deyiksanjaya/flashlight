@@ -1,8 +1,0 @@
-{
-"rewrites": [
-{
-"source": "/control/app.html",
-"destination": "/api/index"
-}
-]
-}
