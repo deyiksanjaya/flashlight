@@ -8,10 +8,10 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <style>
         body {
-            /* Ensure body fills the entire viewport for centering */
+            /* Pastikan body mengisi seluruh viewport untuk centering */
             min-height: 100vh;
         }
-        /* Styling for the button and indicator for smoother transitions */
+        /* Styling untuk tombol dan indikator agar transisi lebih mulus */
         #ready-indicator, #sequence-play-btn, #status {
             transition: all 0.3s ease;
         }
@@ -202,14 +202,14 @@
                 if (fetchedApiResult && fetchedApiResult.success) {
                     finalSearchQuery = typeof fetchedApiResult.data === 'object' ? JSON.stringify(fetchedApiResult.data) : fetchedApiResult.data;
                 } else {
-                    const errorMessage = fetchedApiResult ? fetchedApiResult.error : "API data not loaded.";
+                    const errorMessage = fetchedApiResult ? fetchedApiResult.error : "Data API belum dimuat.";
                     updateStatus(`Tidak dapat memulai. Data API gagal dimuat: <span>${errorMessage}</span>`);
                     isExecutingSequence = false;
                     sequencePlayBtn.classList.remove('hidden');
                     setReadyIndicator(true); 
                     return;
                 }
-            } else {
+            } else { // This handles 'static' source
                 finalSearchQuery = sequenceData.value;
             }
 
