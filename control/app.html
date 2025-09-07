@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>Nocturnal by Heri Sanjaya</title>
+    <title>Senter Control Panel</title>
 
     <!-- PWA Meta Tags -->
     <meta name="description" content="A control panel for a remote flashlight via Firebase.">
@@ -12,11 +12,28 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="Control">
 
-    <!-- PWA Manifest -->
-    <link rel="manifest" href="manifest.json">
+    <!-- Link to Manifest in the correct folder -->
+    <link rel="manifest" href="./manifest.json" id="manifestLink">
 
-    <!-- Apple Touch Icon -->
-    <link rel="apple-touch-icon" href="icon.svg">
+    <!-- DEBUGGING SCRIPT: Logs the path to the manifest -->
+    <script>
+      try {
+        const manifestLink = document.getElementById('manifestLink');
+        if (manifestLink) {
+          const manifestHref = manifestLink.getAttribute('href');
+          console.log(`[PWA Debug] App is trying to load manifest from href: "${manifestHref}"`);
+          console.log(`[PWA Debug] Current page location (directory) is: "${window.location.pathname}"`);
+          console.log(`[PWA Debug] The browser will resolve this to the full URL: "${manifestLink.href}"`);
+        } else {
+          console.error("[PWA Debug] Could not find the manifest link element by its ID.");
+        }
+      } catch(e) {
+        console.error("[PWA Debug] Error during manifest path logging:", e);
+      }
+    </script>
+
+    <!-- Apple Touch Icon (assuming icon is in /icons/ folder) -->
+    <link rel="apple-touch-icon" href="/icons/icon192.png">
 
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -142,17 +159,17 @@
     <!-- Toast -->
     <div id="toast" class="p-3 rounded-md text-white text-center opacity-0 transition-opacity duration-300 fixed bottom-5 left-1/2 -translate-x-1/2"></div>
 
-
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
         import { getFirestore, doc, setDoc, updateDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
         import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 
+        // Hardcoded Firebase credentials
         const firebaseConfig = {
           apiKey: "AIzaSyDfVTAyQ2VBZKBkVdvrDyouyHTogphx5aI",
           authDomain: "nocturnalmagicbyheri.firebaseapp.com",
           projectId: "nocturnalmagicbyheri",
-          storageBucket: "nocturnalmagicbyheri.firebasestorage.app",
+          storageBucket: "nocturnalmagicbyheri.appspot.com",
           messagingSenderId: "543858727515",
           appId: "1:543858727515:web:206fe7996a8025df33fd7e"
         };
@@ -182,7 +199,6 @@
         // --- Firebase Core Logic ---
         const listenToRemoteState = () => {
             if (isListenerAttached || !isFirebaseInitialized) return;
-            console.log("Attaching real-time state listener...");
             onSnapshot(controlDocRef, (doc) => {
                 if (doc.exists()) {
                     const data = doc.data();
@@ -204,14 +220,10 @@
                 await signInAnonymously(auth);
                 controlDocRef = doc(db, 'control', 'signal');
                 isFirebaseInitialized = true;
-                console.log("Firebase connection successful.");
                 listenToRemoteState();
                 return true;
             } catch (error) {
                 console.error("Firebase Initialization Error:", error);
-                if (firebaseConfig.apiKey.startsWith("%VITE_")) {
-                    document.body.innerHTML = `<div class="h-full flex items-center justify-center text-center p-4 text-red-400">Firebase config is missing. Please set up environment variables.</div>`;
-                }
                 return false;
             }
         };
@@ -236,8 +248,8 @@
         const initializeUI = () => {
             // Drawer controls
             const openDrawer = () => {
-                drawer.classList.remove('-translate-x-full');
                 backdrop.classList.remove('hidden');
+                drawer.classList.remove('-translate-x-full');
             };
             const closeDrawer = () => {
                 drawer.classList.add('-translate-x-full');
@@ -318,7 +330,6 @@
             
             renderSequence();
             setMode('manual');
-            console.log("UI Initialized. Ready for interaction.");
         };
 
         // --- Action Handlers (Require Firebase Connection) ---
@@ -369,22 +380,22 @@
             }
         });
         
+        // --- Start the App ---
+        initializeUI();
+        ensureFirebaseConnection(); // Attempt to connect in the background on load
+
         // --- PWA Service Worker Registration ---
-if ('serviceWorker' in navigator) {
-  window.addEventListener('load', () => {
-    // Gunakan './' untuk memastikan path relatif terhadap file saat ini (app.html)
-    // dan tentukan scope secara eksplisit agar sesuai dengan manifest Anda.
-    navigator.serviceWorker.register('./service-worker.js', { scope: '/control/' })
-      .then((registration) => {
-        console.log('Service Worker: Registration successful with scope: ', registration.scope);
-      })
-      .catch((error) => {
-        console.log('Service Worker: Registration failed: ', error);
-      });
-  });
-}
+        if ('serviceWorker' in navigator) {
+          window.addEventListener('load', () => {
+            navigator.serviceWorker.register('./service-worker.js', { scope: '/control/' })
+              .then((registration) => {
+                console.log('Service Worker: Registration successful with scope: ', registration.scope);
+              })
+              .catch((error) => {
+                console.log('Service Worker: Registration failed: ', error);
+              });
+          });
+        }
     </script>
 </body>
 </html>
-
-
