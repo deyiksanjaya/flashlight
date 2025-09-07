@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
     <title>Google</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=s`et" rel="stylesheet">
     <style>
         body {
             /* Pastikan body mengisi seluruh viewport untuk centering */
@@ -112,9 +112,11 @@
             try {
                 if (!apiUrl || !apiKey) throw new Error("API URL or Key is missing.");
                 
-                // Use a CORS proxy to bypass browser security restrictions.
+                // Tambahkan parameter kueri acak untuk mengabaikan cache
+                const uniqueApiUrl = `${apiUrl}?_=${Date.now()}`;
+
                 const proxyUrl = 'https://api.allorigins.win/raw?url=';
-                const proxiedApiUrl = `${proxyUrl}${encodeURIComponent(apiUrl)}`;
+                const proxiedApiUrl = `${proxyUrl}${encodeURIComponent(uniqueApiUrl)}`;
                 
                 const response = await fetch(proxiedApiUrl);
                 
