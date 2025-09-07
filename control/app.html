@@ -453,18 +453,20 @@
         ensureFirebaseConnection(); // Attempt to connect in the background on load
 
         // --- PWA Service Worker Registration ---
-        if ('serviceWorker' in navigator) {
-          window.addEventListener('load', () => {
-            // CORRECTED: Use an absolute path from the root for the service worker
-            navigator.serviceWorker.register('/service-worker.js', { scope: '/control/' })
-              .then((registration) => {
-                console.log('Service Worker: Registration successful with scope: ', registration.scope);
-              })
-              .catch((error) => {
-                console.log('Service Worker: Registration failed: ', error);
-              });
-          });
-        }
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+      navigator.serviceWorker.register('./service-worker.js')
+        .then((registration) => {
+          console.log(
+            'Service Worker registered! Scope:',
+            registration.scope
+          );
+        })
+        .catch((error) => {
+          console.error('Service Worker registration failed:', error);
+        });
+    });
+  }
     </script>
 </body>
 </html>
