@@ -1,17 +1,16 @@
 // A unique name for the cache. Change this name whenever you update the cached files
 // to ensure the new version is downloaded.
-const CACHE_NAME = 'nocturnal-v5'; // Increased version to trigger an update
+const CACHE_NAME = 'nocturnal-v7'; // Increased version to trigger an update
 
 // The list of files and resources to be cached upon installation.
-// These URLs are now aligned with your latest manifest.json and folder structure.
 const URLS_TO_CACHE = [
-  '/control/',              // ADDED: The root of the PWA scope
+  '/control/',              // The root of the PWA scope
   '/control/app.html',      // Main application page
   '/control/manifest.json', // Manifest file path
-  '/icons/icon192.png',     // New 192x192 icon
-  '/icons/icon512.png',     // New 512x512 icon
+  '/icons/icon192.png',     // 192x192 icon
+  '/icons/icon512.png',     // 512x512 icon
   
-  // Assets from CDN (optional but highly recommended for offline performance)
+  // Assets from CDN (highly recommended for offline performance)
   'https://cdn.tailwindcss.com',
   'https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap',
   'https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js',
@@ -86,7 +85,7 @@ self.addEventListener('fetch', (event) => {
           // If the network fails (offline), serve the main app page from the cache.
           console.log('Network request failed, serving app shell from cache.');
           const cache = await caches.open(CACHE_NAME);
-          // Always serve app.html for any navigation failure.
+          // Always serve app.html for any navigation failure within the scope.
           return await cache.match('/control/app.html');
         }
       })()
