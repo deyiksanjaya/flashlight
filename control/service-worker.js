@@ -1,14 +1,16 @@
-// Nama cache unik. Ubah nama ini setiap kali Anda memperbarui file-file di dalam cache
-// agar service worker mengunduh versi yang baru.
-const CACHE_NAME = 'nocturnal-v1';
+// A unique name for the cache. Change this name whenever you update the cached files
+// to ensure the new version is downloaded.
+const CACHE_NAME = 'nocturnal-v4'; // Increased version to reflect file path change
 
-// Daftar file dan sumber daya yang akan disimpan di cache saat instalasi.
+// The list of files and resources to be cached upon installation.
+// These URLs are now aligned with your latest manifest.json and folder structure.
 const URLS_TO_CACHE = [
-  '/', // Mewakili file HTML utama (index.html atau controller.html)
-  './control/manifest.json',
-  './control/icon.png', // Ikon yang direferensikan di manifest.json
+  '/control/app.html',      // Main application page
+  '/control/manifest.json', // CORRECTED: Manifest file path
+  '/icons/icon192.png',     // New 192x192 icon
+  '/icons/icon512.png',     // New 512x512 icon
   
-  // Aset dari CDN (opsional tapi sangat direkomendasikan untuk performa offline)
+  // Assets from CDN (optional but highly recommended for offline performance)
   'https://cdn.tailwindcss.com',
   'https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap',
   'https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js',
@@ -17,67 +19,67 @@ const URLS_TO_CACHE = [
   'https://img.icons8.com/pastel-glyph/64/shutdown--v1.png'
 ];
 
-// Event 'install': Dipicu saat service worker pertama kali diinstal.
-// Di sini kita membuka cache dan menyimpan semua aset yang diperlukan.
+// 'install' event: Fired when the service worker is first installed.
+// We open the cache and store all necessary assets.
 self.addEventListener('install', (event) => {
-  console.log('Service Worker: Menginstal...');
+  console.log('Service Worker: Installing...');
   
   event.waitUntil(
     caches.open(CACHE_NAME)
       .then((cache) => {
-        console.log('Service Worker: Cache dibuka, menyimpan aset...');
+        console.log('Service Worker: Cache opened, caching assets...');
         return cache.addAll(URLS_TO_CACHE);
       })
       .then(() => {
-        console.log('Service Worker: Semua aset berhasil disimpan di cache.');
-        return self.skipWaiting(); // Memaksa service worker baru untuk aktif
+        console.log('Service Worker: All assets successfully cached.');
+        return self.skipWaiting(); // Force the new service worker to become active
       })
   );
 });
 
-// Event 'activate': Dipicu setelah instalasi selesai dan service worker aktif.
-// Di sini kita membersihkan cache lama agar tidak menumpuk.
+// 'activate' event: Fired after installation is complete and the service worker is active.
+// Here we clean up old caches to prevent them from piling up.
 self.addEventListener('activate', (event) => {
-  console.log('Service Worker: Mengaktifkan...');
+  console.log('Service Worker: Activating...');
 
   event.waitUntil(
     caches.keys().then((cacheNames) => {
       return Promise.all(
         cacheNames.map((cacheName) => {
-          // Jika nama cache tidak cocok dengan yang sekarang, hapus.
+          // If a cache's name doesn't match the current one, delete it.
           if (cacheName !== CACHE_NAME) {
-            console.log('Service Worker: Menghapus cache lama:', cacheName);
+            console.log('Service Worker: Deleting old cache:', cacheName);
             return caches.delete(cacheName);
           }
         })
       );
     }).then(() => {
-        console.log('Service Worker: Siap mengontrol klien.');
-        return self.clients.claim(); // Mengambil alih kontrol halaman yang terbuka
+        console.log('Service Worker: Ready to control clients.');
+        return self.clients.claim(); // Take over control of any open pages
     })
   );
 });
 
-// Event 'fetch': Dipicu setiap kali aplikasi membuat permintaan jaringan (misalnya, gambar, skrip).
-// Di sini kita menerapkan strategi "Cache First": coba ambil dari cache dulu, jika gagal baru ke jaringan.
+// 'fetch' event: Fired every time the app makes a network request (e.g., for images, scripts).
+// We implement a "Cache First" strategy: try to serve from the cache, and if that fails, go to the network.
 self.addEventListener('fetch', (event) => {
-  // Kita hanya menerapkan strategi cache untuk permintaan GET.
+  // We only apply the cache strategy for GET requests.
   if (event.request.method !== 'GET') {
     return;
   }
   
-  // Strategi Cache First
+  // Cache First Strategy
   event.respondWith(
     caches.match(event.request)
       .then((response) => {
-        // Jika respons ditemukan di cache, kembalikan dari cache.
+        // If a response is found in the cache, return it.
         if (response) {
-          console.log('Service Worker: Mengambil dari cache:', event.request.url);
+          // console.log('Service Worker: Fetching from cache:', event.request.url);
           return response;
         }
         
-        // Jika tidak ada di cache, coba ambil dari jaringan.
-        console.log('Service Worker: Mengambil dari jaringan:', event.request.url);
+        // If it's not in the cache, try to fetch it from the network.
+        // console.log('Service Worker: Fetching from network:', event.request.url);
         return fetch(event.request);
       })
   );
