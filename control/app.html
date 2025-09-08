@@ -246,6 +246,8 @@
         let currentSourceMode = 'manual';
         let currentAppMode = 'remote'; 
         let lastKnownSignalState = {};
+        let unsubscribeSignal = null;
+        let unsubscribeMode = null;
         const SAVE_LOCAL = true;
         const LOCAL_KEY = 'signal';
         const LOCAL_SETTINGS_KEY = 'nocturnal_advanced_settings';
@@ -348,7 +350,7 @@
         // --- Firebase Core Logic ---
         const listenToRemoteState = () => {
              if (isListenerAttached || !isAppInitialized) return;
-             onSnapshot(signalDocRef, async (docSnap) => {
+             unsubscribeSignal = onSnapshot(signalDocRef, async (docSnap) => {
                  if (!docSnap.exists()) {
                      console.warn("Control document does not exist.");
                      return;
@@ -388,7 +390,7 @@
 
         const listenToAppMode = () => {
              if (!isAppInitialized) return;
-             onSnapshot(modeDocRef, (docSnap) => {
+             unsubscribeMode = onSnapshot(modeDocRef, (docSnap) => {
                  const data = docSnap.data();
                  if (data && data.mode) {
                      currentAppMode = data.mode;
@@ -397,6 +399,21 @@
                      showToast(`Mode switched to ${currentAppMode}.`, 'success');
                  }
              });
+        };
+        
+        const detachListenersAndResetState = () => {
+            if (unsubscribeSignal) {
+                unsubscribeSignal();
+                unsubscribeSignal = null;
+            }
+            if (unsubscribeMode) {
+                unsubscribeMode();
+                unsubscribeMode = null;
+            }
+            isListenerAttached = false;
+            isAppInitialized = false;
+            isFirstSnapshot = true; // Reset snapshot flag
+            console.log("App state reset and listeners detached.");
         };
 
         const updateFirestoreData = async (docRef, data, merge = true) => {
@@ -690,7 +707,7 @@
                     } else {
                         mainAppContent.classList.add('hidden');
                         loginScreen.classList.remove('hidden');
-                        isAppInitialized = false;
+                        detachListenersAndResetState();
                     }
                 });
 
@@ -707,3 +724,4 @@
     </script>
 </body>
 </html>
+
