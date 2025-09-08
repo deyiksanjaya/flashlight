@@ -65,14 +65,18 @@
 </head>
 <body class="overscroll-none">
 
-    <!-- Login Screen -->
-    <div id="login-screen" class="fixed inset-0 bg-[#0a0a0a] z-50 flex items-center justify-center p-4">
+    <!-- Loading Indicator -->
+    <div id="loading-indicator" class="fixed inset-0 z-50 flex items-center justify-center bg-[#0a0a0a]">
+        <p class="text-white text-lg animate-pulse">Initializing...</p>
+    </div>
+
+    <!-- Login Screen (initially hidden) -->
+    <div id="login-screen" class="fixed inset-0 bg-[#0a0a0a] z-40 flex items-center justify-center p-4 hidden">
         <div class="w-full max-w-md">
             <div class="card rounded-lg p-8 shadow-2xl">
-                <h2 class="text-3xl font-bold text-center mb-2">Nocturnal</h2>
+                <h2 class="text-3xl font-bold text-center mb-2">Nocturnal Control</h2>
                 <p class="text-center text-gray-400 mb-8">Please sign in to continue</p>
                 
-                <!-- Login Form -->
                 <form id="login-form" class="space-y-6 mt-8">
                     <div>
                         <label for="login-email" class="block text-sm font-medium text-gray-400 mb-2">Email</label>
@@ -220,7 +224,7 @@
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
         import { getFirestore, doc, setDoc, getDoc, onSnapshot, updateDoc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
-        import { getAuth, onAuthStateChanged, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+        import { getAuth, onAuthStateChanged, signInWithEmailAndPassword, signOut, setPersistence, browserLocalPersistence } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 
         const firebaseConfig = {
           apiKey: "AIzaSyCg1wk1dIijIXcRfoXwDCeVNstktcAhopY",
@@ -247,6 +251,7 @@
         const LOCAL_SETTINGS_KEY = 'nocturnal_advanced_settings';
 
         // --- UI Elements ---
+        const loadingIndicator = document.getElementById('loading-indicator');
         const loginScreen = document.getElementById('login-screen');
         const mainAppContent = document.getElementById('main-app-content');
         const powerBtn = document.getElementById('power-btn');
@@ -309,7 +314,6 @@
                  const storedSettings = localStorage.getItem(LOCAL_SETTINGS_KEY);
                  if (storedSettings) {
                      const settings = JSON.parse(storedSettings);
-                     // Just update variables, UI updates will be handled after
                      if (settings.flashSequence) { flashSequence = settings.flashSequence; }
                      if (settings.currentSourceMode) { currentSourceMode = settings.currentSourceMode; }
                      if (settings.manualQuery) { document.getElementById('manual-query').value = settings.manualQuery; }
@@ -432,5 +436,274 @@
 
              const sequencePreview = document.getElementById('sequence-preview');
              const sequenceStringDisplay = document.getElementById('sequence-string');
-             const arrowIconSVG =
+             const arrowIconSVG = `data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='%236b7280' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='9 18 15 12 9 6'/%3e%3c/svg%3e`;
+             const iconSun = `data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3ccircle cx='12' cy='12' r='4'/%3e%3cpath d='M12 2v2'/%3e%3cpath d='M12 20v2'/%3e%3cmove-to x='4.93' y='4.93'/%3e%3cline x1='7.76' y1='7.76' x2='4.93' y2='4.93'/%3e%3cmove-to x='16.24' y='16.24'/%3e%3cline x1='19.07' y1='19.07' x2='16.24' y2='16.24'/%3e%3cpath d='M2 12h2'/%3e%3cpath d='M20 12h2'/%3e%3cmove-to x='4.93' y='19.07'/%3e%3cline x1='7.76' y1='16.24' x2='4.93' y2='19.07'/%3e%3cmove-to x='16.24' y='7.76'/%3e%3cline x1='19.07' y1='4.93' x2='16.24' y2='7.76'/%3e%3c/svg%3e`;
+             const iconMoon = `data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpath d='M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z'/%3e%3c/svg%3e`;
+             const iconTimer = `data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3ccircle cx='12' cy='12' r='10'/%3e%3cpolyline points='12 6 12 12 16 14'/%3e%3c/svg%3e`;
 
+             window.renderSequence = () => {
+                 sequencePreview.innerHTML = '';
+                 if (flashSequence.length === 0) {
+                     sequencePreview.innerHTML = '<span class="text-gray-500 italic">Build a sequence...</span>';
+                 } else {
+                     flashSequence.forEach((item, index) => {
+                         const el = document.createElement('div');
+                         el.classList.add('sequence-item');
+                         let iconSVG = '', text = '';
+                         if (item === 'on') { el.classList.add('item-on'); iconSVG = iconSun; text = 'ON'; } 
+                         else if (item === 'off') { el.classList.add('item-off'); iconSVG = iconMoon; text = 'OFF'; } 
+                         else { el.classList.add('item-delay'); iconSVG = iconTimer; text = `${item}ms`; }
+                         el.innerHTML = `<img src="${iconSVG}" class="icon-sm mr-1.5"/> ${text}`;
+                         sequencePreview.appendChild(el);
+                         if (index < flashSequence.length - 1) {
+                             const arrow = document.createElement('img');
+                             arrow.src = arrowIconSVG;
+                             arrow.className = 'w-5 h-5 mx-1';
+                             sequencePreview.appendChild(arrow);
+                         }
+                     });
+                 }
+                 sequenceStringDisplay.textContent = `flashStatus: "${flashSequence.join(',')}"`;
+             };
+
+             document.getElementById('btn-on').addEventListener('click', () => { flashSequence.push('on'); renderSequence(); });
+             document.getElementById('btn-off').addEventListener('click', () => { flashSequence.push('off'); renderSequence(); });
+             document.getElementById('btn-reset').addEventListener('click', () => { flashSequence = []; renderSequence(); });
+             
+             const delayModalOverlay = document.getElementById('delay-modal-overlay');
+             const delayInput = document.getElementById('delay-input');
+             document.getElementById('btn-add-delay').addEventListener('click', () => {
+                 delayInput.value = '';
+                 delayModalOverlay.classList.remove('hidden');
+                 delayInput.focus();
+             });
+             document.getElementById('btn-cancel-delay').addEventListener('click', () => delayModalOverlay.classList.add('hidden'));
+             document.getElementById('btn-save-delay').addEventListener('click', () => {
+                 const seconds = parseFloat(delayInput.value);
+                 if (seconds > 0) {
+                     flashSequence.push(seconds * 1000);
+                     renderSequence();
+                     delayModalOverlay.classList.add('hidden');
+                 } else { showToast("Invalid number.", "error"); }
+             });
+
+             window.setMode = (mode) => {
+                 currentSourceMode = mode;
+                 document.getElementById('btn-mode-manual').classList.toggle('active', mode === 'manual');
+                 document.getElementById('btn-mode-api').classList.toggle('active', mode === 'api');
+                 document.getElementById('form-manual').classList.toggle('hidden', mode !== 'manual');
+                 document.getElementById('form-api').classList.toggle('hidden', mode === 'manual');
+             };
+             document.getElementById('btn-mode-manual').addEventListener('click', () => setMode('manual'));
+             document.getElementById('btn-mode-api').addEventListener('click', () => setMode('api'));
+             
+             loadSettingsFromLocal(); 
+             renderSequence();
+             setMode(currentSourceMode);
+             modeSelector.value = currentAppMode;
+        };
+        
+        const attachActionHandlers = () => {
+            powerBtn.addEventListener('click', async () => {
+                try {
+                    await updateDoc(signalDocRef, { powerState: !currentPowerState });
+                } catch (err) {
+                    console.error("Failed to toggle powerState:", err);
+                    showToast("Failed to toggle power.", "error");
+                }
+            });
+            
+            document.getElementById('search-form').addEventListener('submit', async (e) => {
+                e.preventDefault();
+                const input = document.getElementById('search-input');
+                const searchTerm = input.value.trim();
+                if (searchTerm) {
+                    const success = await updateFirestoreData(signalDocRef, { 
+                        searchCommand: { term: searchTerm, timestamp: Date.now() } 
+                    });
+                    if (success) { input.value = ''; showToast(`Searching for "${searchTerm}"...`, 'success'); }
+                }
+            });
+
+            document.getElementById('btn-apply-all').addEventListener('click', async () => {
+                saveSettingsToLocal();
+                let payload = {};
+                payload.flashStatus = flashSequence.join(',');
+                
+                if (currentSourceMode === 'manual') {
+                    payload.source = 'manual';
+                    payload.value = document.getElementById('manual-query').value;
+                } else {
+                    payload.source = 'api';
+                    payload.apiUrl = document.getElementById('api-url').value;
+                    payload.apiKey = document.getElementById('json-key').value;
+                }
+                
+                const success = await updateFirestoreData(sequenceDocRef, payload, false);
+
+                if(success) {
+                    showToast("Advanced settings applied!", "success");
+                    await updateFirestoreData(modeDocRef, { mode: 'sequence' });
+                    document.getElementById('close-drawer-btn').click();
+                }
+            });
+            
+            document.getElementById('btn-sync-settings').addEventListener('click', async () => {
+                showToast("Syncing settings...", 'success');
+                try {
+                    const docSnap = await getDoc(sequenceDocRef);
+                    if (docSnap.exists()) {
+                        const data = docSnap.data();
+                        
+                        if (data.flashStatus) {
+                            flashSequence = data.flashStatus.split(',').map(item => isNaN(parseInt(item)) ? item.trim() : parseInt(item));
+                        } else { flashSequence = []; }
+                        
+                        renderSequence();
+                        
+                        const mode = data.source || 'manual';
+                        setMode(mode);
+                        document.getElementById('manual-query').value = data.value || '';
+                        document.getElementById('api-url').value = data.apiUrl || '';
+                        document.getElementById('json-key').value = data.apiKey || '';
+                        
+                        saveSettingsToLocal();
+
+                        showToast("Settings synced successfully!", "success");
+                    } else { showToast("No settings found on server.", "error"); }
+                } catch (error) {
+                    showToast("Failed to sync settings.", "error");
+                    console.error("Error syncing settings:", error);
+                }
+            });
+
+            document.getElementById('api-test-btn').addEventListener('click', async () => {
+                const apiUrl = document.getElementById('api-url').value;
+                const apiKey = document.getElementById('json-key').value;
+                const apiResultEl = document.getElementById('api-result');
+                
+                if (!apiUrl || !apiKey) return showToast("URL and Key must be filled.", "error");
+
+                apiResultEl.classList.remove('hidden');
+                apiResultEl.textContent = "Fetching...";
+                
+                const result = await fetchApiData(apiUrl, apiKey);
+
+                if (result.success) {
+                    apiResultEl.textContent = `SUCCESS!\n\nExtracted Value:\n${JSON.stringify(result.data, null, 2)}\n\n---\n\nRaw Response:\n${JSON.stringify(result.raw, null, 2)}`;
+                } else {
+                    apiResultEl.textContent = `FAILED!\n\nError: ${result.error}`;
+                }
+            });
+
+            modeSelector.addEventListener('change', async (e) => {
+                const newMode = e.target.value;
+                currentAppMode = newMode;
+                saveSettingsToLocal();
+                await updateFirestoreData(modeDocRef, { mode: newMode });
+                updateUIForMode(newMode);
+            });
+
+            document.getElementById('logout-btn').addEventListener('click', async () => {
+                try {
+                    await signOut(auth);
+                    showToast("You have been logged out.", "success");
+                } catch (error) {
+                    console.error("Logout Error:", error);
+                    showToast("Logout failed.", "error");
+                }
+            });
+        };
+
+        // --- Main App Initialization ---
+        const startApp = () => {
+            if (isAppInitialized) return;
+            
+            db = getFirestore(app);
+            signalDocRef = doc(db, 'control', 'signal');
+            sequenceDocRef = doc(db, 'control', 'sequence');
+            modeDocRef = doc(db, 'control', 'mode');
+            
+            isAppInitialized = true;
+            
+            initializeAppUI();
+            attachActionHandlers();
+            
+            listenToRemoteState();
+            listenToAppMode();
+            updateUIForMode(currentAppMode); 
+        };
+
+        // --- Authentication Handling ---
+        const setupAuthHandlers = () => {
+            const loginForm = document.getElementById('login-form');
+            const loginBtn = document.getElementById('login-btn');
+
+            loginForm.addEventListener('submit', async (e) => {
+                e.preventDefault();
+                loginBtn.disabled = true;
+                loginBtn.textContent = 'Verifying...';
+                authError.textContent = '';
+                const email = document.getElementById('login-email').value;
+                const pass = document.getElementById('login-password').value;
+                try {
+                    await signInWithEmailAndPassword(auth, email, pass);
+                } catch (error) {
+                    authError.textContent = 'Incorrect email or password.';
+                    console.error('Login error:', error.message);
+                } finally {
+                    loginBtn.disabled = false;
+                    loginBtn.textContent = 'Sign In';
+                }
+            });
+        };
+
+        // --- PWA Service Worker Registration ---
+        const registerServiceWorker = () => {
+            if ('serviceWorker' in navigator) {
+                window.addEventListener('load', () => {
+                navigator.serviceWorker.register('./service-worker.js')
+                    .then((registration) => {
+                        console.log('Service Worker registered! Scope:', registration.scope);
+                    })
+                    .catch((error) => {
+                        console.error('Service Worker registration failed:', error);
+                    });
+                });
+            }
+        };
+
+        // --- App Entry Point ---
+        document.addEventListener('DOMContentLoaded', async () => {
+            try {
+                app = initializeApp(firebaseConfig);
+                auth = getAuth(app);
+                
+                await setPersistence(auth, browserLocalPersistence);
+
+                onAuthStateChanged(auth, (user) => {
+                    loadingIndicator.classList.add('hidden');
+                    if (user) {
+                        loginScreen.classList.add('hidden');
+                        mainAppContent.classList.remove('hidden');
+                        startApp();
+                    } else {
+                        mainAppContent.classList.add('hidden');
+                        loginScreen.classList.remove('hidden');
+                        isAppInitialized = false;
+                    }
+                });
+
+                setupAuthHandlers();
+                registerServiceWorker();
+
+            } catch (error) {
+                console.error("Firebase Initialization Error:", error);
+                loadingIndicator.classList.add('hidden');
+                document.body.innerHTML = '<div class="text-white text-center p-8">Could not connect to services. Please try again later.</div>'
+            }
+        });
+
+    </script>
+</body>
+</html>
