@@ -69,7 +69,7 @@
         <div class="w-full max-w-md">
             <div class="card rounded-lg p-8 shadow-2xl">
                 <!-- Icon Baru -->
-                <img src="icons/transparent.png" alt="Nocturnal Logo" class="w-24 h-auto mx-auto mb-4">
+                <img src="./transparent.png" alt="Nocturnal Logo" class="w-24 h-auto mx-auto mb-4">
                 <h2 class="text-3xl font-bold text-center mb-2">Nocturnal</h2>
                 <p class="text-center text-gray-400 mb-8">Please sign in to continue</p>
                 
@@ -97,7 +97,7 @@
             <button id="close-drawer-btn" class="absolute top-4 right-4 text-gray-400 hover:text-white bg-gray-800/50 rounded-full p-1">
                 <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
             </button>
-            <h2 class="text-2xl font-bold mb-6">Advanced Settings (Sequence Mode)</h2>
+            <h2 class="text-2xl font-bold mb-6">Settings</h2>
             
             <div class="space-y-6">
                 <div class="card rounded-lg p-6">
@@ -140,8 +140,8 @@
                      </div>
                      <div id="form-api" class="hidden">
                          <p class="text-sm text-gray-400 mb-2">API to fetch search query from.</p>
-                         <input type="url" id="api-url" class="form-input w-full rounded-md p-3 mb-3" placeholder="https://api.deckofcardsapi.com/api/deck/new/draw/">
-                         <input type="text" id="json-key" class="form-input w-full rounded-md p-3" placeholder="Example: cards[0].code">
+                         <input type="url" id="api-url" class="form-input w-full rounded-md p-3 mb-3" placeholder="Your API URL">
+                         <input type="text" id="json-key" class="form-input w-full rounded-md p-3" placeholder="JSON Key">
                          <button id="api-test-btn" class="btn btn-secondary w-full py-2 rounded-lg font-semibold mt-4">Test API</button>
                          <pre id="api-result" class="hidden mt-2 w-full h-24 bg-black/50 border border-gray-600 rounded-md p-2 text-xs overflow-auto whitespace-pre-wrap word-break-all"></pre>
                      </div>
@@ -163,7 +163,7 @@
                  </button>
                  <!-- Teks Baru: Credit -->
                  <div class="text-center text-xs text-gray-600 mt-8">
-                    Nocturnal<br>by<br>Heri Sanjaya
+                    Nocturnal<br>Heri Sanjaya
                  </div>
             </div>
         </aside>
