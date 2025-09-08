@@ -197,7 +197,7 @@
                          <img src="data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='%23facc15' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpath d='M13 2L3 14h9l-1 8 10-12h-9l1-8z'/%3e%3c/svg%3e" class="w-6 h-6"/>
                          Visual Flash Sequencer
                     </h3>
-                    <div id="sequence-preview" class="h-40 overflow-y-auto bg-black/50 rounded-md p-3 mb-4 flex flex-wrap items-start content-start border border-dashed border-gray-600"></div>
+                    <div id="sequence-preview" class="h-40 overflow-y-auto bg-black/50 rounded-md p-3 mb-4 flex flex-wrap items-center content-start border border-dashed border-gray-600"></div>
                     <div class="flex flex-wrap justify-center gap-3 mb-4">
                         <button id="btn-on" class="btn bg-yellow-500 hover:bg-yellow-400 text-black px-4 py-2 rounded-md font-bold flex items-center gap-2">
                             <img src="data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3ccircle cx='12' cy='12' r='4'/%3e%3cpath d='M12 2v2'/%3e%3cpath d='M12 20v2'/%3e%3cmove-to x='4.93' y='4.93'/%3e%3cline x1='7.76' y1='7.76' x2='4.93' y2='4.93'/%3e%3cmove-to x='16.24' y='16.24'/%3e%3cline x1='19.07' y1='19.07' x2='16.24' y2='16.24'/%3e%3cpath d='M2 12h2'/%3e%3cpath d='M20 12h2'/%3e%3cmove-to x='4.93' y='19.07'/%3e%3cline x1='7.76' y1='16.24' x2='4.93' y2='19.07'/%3e%3cmove-to x='16.24' y='7.76'/%3e%3cline x1='19.07' y1='4.93' x2='16.24' y2='7.76'/%3e%3c/svg%3e" class="icon-sm"/>ON
@@ -541,11 +541,12 @@
 
         const renderSequence = () => {
             const sequencePreview = document.getElementById('sequence-preview');
+            const arrowIconSVG = `data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='%236b7280' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='9 18 15 12 9 6'/%3e%3c/svg%3e`;
             sequencePreview.innerHTML = '';
             if (flashSequence.length === 0) {
                 sequencePreview.innerHTML = '<span class="text-gray-500 italic p-2">Build a sequence...</span>';
             } else {
-                flashSequence.forEach((item) => {
+                flashSequence.forEach((item, index) => {
                     const el = document.createElement('div');
                     el.classList.add('sequence-item');
                     let text = '';
@@ -578,6 +579,13 @@
                     el.appendChild(document.createTextNode(text));
 
                     sequencePreview.appendChild(el);
+
+                    if (index < flashSequence.length - 1) {
+                        const arrow = document.createElement('img');
+                        arrow.src = arrowIconSVG;
+                        arrow.className = 'w-5 h-5 mx-1 opacity-50';
+                        sequencePreview.appendChild(arrow);
+                    }
                 });
             }
             sequencePreview.scrollTop = sequencePreview.scrollHeight;
