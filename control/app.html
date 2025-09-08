@@ -4,20 +4,16 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
     <title>Nocturnal by Heri Sanjaya</title>
-
     <!-- PWA Meta Tags -->
     <meta name="description" content="A control panel for a remote flashlight via Firebase.">
     <meta name="theme-color" content="#1a1a1a"/>
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="Control">
-
     <!-- Link to Manifest in the correct folder -->
     <link rel="manifest" href="./manifest.json">
-
     <!-- Apple Touch Icon (assuming icon is in /icons/ folder) -->
     <link rel="apple-touch-icon" href="/icons/icon192.png">
-
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     
@@ -64,17 +60,15 @@
     </style>
 </head>
 <body class="overscroll-none">
-
     <!-- Loading Indicator -->
     <div id="loading-indicator" class="fixed inset-0 z-50 flex items-center justify-center bg-[#0a0a0a]">
         <p class="text-white text-lg animate-pulse">Initializing...</p>
     </div>
-
     <!-- Login Screen (initially hidden) -->
     <div id="login-screen" class="fixed inset-0 bg-[#0a0a0a] z-40 flex items-center justify-center p-4 hidden">
         <div class="w-full max-w-md">
             <div class="card rounded-lg p-8 shadow-2xl">
-                <h2 class="text-3xl font-bold text-center mb-2">Nocturnal Control</h2>
+                <h2 class="text-3xl font-bold text-center mb-2">Nocturnal</h2>
                 <p class="text-center text-gray-400 mb-8">Please sign in to continue</p>
                 
                 <form id="login-form" class="space-y-6 mt-8">
@@ -93,7 +87,6 @@
             </div>
         </div>
     </div>
-
     <!-- Main App Content (Hidden by default) -->
     <div id="main-app-content" class="h-full hidden">
         <!-- Drawer -->
@@ -127,7 +120,6 @@
                     </div>
                     <code id="sequence-string" class="block text-gray-500 bg-black/50 p-2 rounded-md text-sm"></code>
                 </div>
-
                 <div class="card rounded-lg p-6">
                      <h3 class="text-xl font-semibold flex items-center gap-2 mb-4">
                          <img src="data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='%2322d3ee' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cellipse cx='12' cy='5' rx='9' ry='3'/%3e%3cpath d='M21 12c0 1.66-4 3-9 3s-9-1.34-9-3'/%3e%3cpath d='M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5'/%3e%3c/svg%3e" class="w-6 h-6"/>
@@ -166,14 +158,12 @@
                  </button>
             </div>
         </aside>
-
         <!-- Main Content Area -->
         <div class="relative h-full flex flex-col items-center justify-center p-4">
             <!-- Setting Button -->
             <button id="settings-btn" class="absolute top-4 left-4 text-white z-10">
                 <img src="data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='white' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3ccircle cx='12' cy='12' r='3'/%3e%3cpath d='M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z'/%3e%3c/svg%3e" class="w-8 h-8"/>
             </button>
-
             <!-- Dropdown to select mode -->
             <div class="fixed top-4 left-1/2 -translate-x-1/2 z-20">
                 <select id="mode-selector" class="form-input rounded-full pl-4 pr-10 py-2 text-sm text-center appearance-none cursor-pointer">
@@ -184,7 +174,6 @@
                     <svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
                 </div>
             </div>
-
             <!-- Remote Control Panel -->
             <div id="remote-control-panel" class="w-full flex flex-col items-center gap-12 max-w-sm">
                 <button id="power-btn" class="power-button flex items-center justify-center">
@@ -195,14 +184,12 @@
                     <button type="submit" class="btn btn-primary w-full py-3 rounded-md font-semibold">Search</button>
                 </form>
             </div>
-
             <!-- Sequence Settings Panel (Hidden by default) -->
             <div id="sequence-panel" class="w-full flex flex-col items-center justify-center gap-6 max-w-sm hidden">
                  <h2 class="text-xl font-semibold text-center text-gray-400">Sequence Mode</h2>
                 <p class="text-gray-500 text-center">Use the gear icon to create and apply a flash sequence.</p>
             </div>
         </div>
-
         <!-- Modal Jeda -->
         <div id="delay-modal-overlay" class="fixed inset-0 bg-black/70 flex items-center justify-center p-4 hidden z-50">
             <div class="bg-[#1a1a1a] border border-[#2a2a2a] rounded-lg p-6 w-full max-w-sm shadow-2xl">
@@ -219,13 +206,10 @@
         <!-- Toast -->
         <div id="toast" class="p-3 rounded-md text-white text-center opacity-0 transition-opacity duration-300 fixed bottom-5 left-1/2 -translate-x-1/2"></div>
     </div>
-
-
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
         import { getFirestore, doc, setDoc, getDoc, onSnapshot, updateDoc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
         import { getAuth, onAuthStateChanged, signInWithEmailAndPassword, signOut, setPersistence, browserLocalPersistence } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
-
         const firebaseConfig = {
           apiKey: "AIzaSyCg1wk1dIijIXcRfoXwDCeVNstktcAhopY",
           authDomain: "nocturnal-asiaa.firebaseapp.com",
@@ -234,7 +218,6 @@
           messagingSenderId: "39095161997",
           appId: "1:39095161997:web:bd414fef8b17e3cecdbec4"
         };
-
         // --- App State ---
         let app, db, auth;
         let signalDocRef, sequenceDocRef, modeDocRef;
@@ -251,7 +234,6 @@
         const SAVE_LOCAL = true;
         const LOCAL_KEY = 'signal';
         const LOCAL_SETTINGS_KEY = 'nocturnal_advanced_settings';
-
         // --- UI Elements ---
         const loadingIndicator = document.getElementById('loading-indicator');
         const loginScreen = document.getElementById('login-screen');
@@ -263,7 +245,6 @@
         const remotePanel = document.getElementById('remote-control-panel');
         const sequencePanel = document.getElementById('sequence-panel');
         const authError = document.getElementById('auth-error');
-
         // --- Helper Functions ---
         const showToast = (message, type = 'success') => {
              const el = document.getElementById('toast');
@@ -278,7 +259,6 @@
                  return path.replace(/\[(\w+)\]/g, '.$1').split('.').reduce((o, k) => (o || {})[k], obj);
              } catch (e) { return undefined; }
         };
-
         const mergeSignalState = (newData) => {
              if (!newData || typeof newData !== 'object') return;
              lastKnownSignalState = { ...lastKnownSignalState, ...newData };
@@ -291,7 +271,6 @@
                  }
              }
         };
-
         const saveSettingsToLocal = () => {
              if (typeof window === 'undefined') return;
              try {
@@ -309,7 +288,6 @@
                  console.error('Failed to save settings to localStorage:', err);
              }
         };
-
         const loadSettingsFromLocal = () => {
              if (typeof window === 'undefined') return;
              try {
@@ -328,7 +306,6 @@
                  console.error('Failed to load settings from localStorage:', err);
              }
         };
-
         const fetchApiData = async (apiUrl, apiKey) => {
              try {
                  if (!apiUrl || !apiKey) throw new Error("API URL or Key is missing.");
@@ -346,7 +323,6 @@
                  return { success: false, error: userFriendlyError };
              }
         };
-
         // --- Firebase Core Logic ---
         const listenToRemoteState = () => {
              if (isListenerAttached || !isAppInitialized) return;
@@ -356,7 +332,6 @@
                      return;
                  }
                  const data = docSnap.data();
-
                  if (isFirstSnapshot) {
                      try {
                          if (data.powerState === true) {
@@ -378,7 +353,6 @@
                      currentPowerState = data.powerState;
                      powerBtn.classList.toggle('active', currentPowerState);
                  }
-
                  if (data.searchCommand && data.searchCommand.timestamp !== (lastKnownSignalState.searchCommand && lastKnownSignalState.searchCommand.timestamp)) {
                      const term = data.searchCommand.term;
                      showToast(`Searching for: ${term}`, 'success');
@@ -387,7 +361,6 @@
              });
              isListenerAttached = true;
         };
-
         const listenToAppMode = () => {
              if (!isAppInitialized) return;
              unsubscribeMode = onSnapshot(modeDocRef, (docSnap) => {
@@ -415,7 +388,6 @@
             isFirstSnapshot = true; // Reset snapshot flag
             console.log("App state reset and listeners detached.");
         };
-
         const updateFirestoreData = async (docRef, data, merge = true) => {
              try {
                  await setDoc(docRef, data, { merge: merge });
@@ -426,7 +398,6 @@
                  return false;
              }
         };
-
         const updateUIForMode = (mode) => {
              if (mode === 'remote') {
                  remotePanel.classList.remove('hidden');
@@ -450,14 +421,12 @@
              document.getElementById('settings-btn').addEventListener('click', openDrawer);
              document.getElementById('close-drawer-btn').addEventListener('click', closeDrawer);
              backdrop.addEventListener('click', closeDrawer);
-
              const sequencePreview = document.getElementById('sequence-preview');
              const sequenceStringDisplay = document.getElementById('sequence-string');
              const arrowIconSVG = `data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='%236b7280' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='9 18 15 12 9 6'/%3e%3c/svg%3e`;
              const iconSun = `data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3ccircle cx='12' cy='12' r='4'/%3e%3cpath d='M12 2v2'/%3e%3cpath d='M12 20v2'/%3e%3cmove-to x='4.93' y='4.93'/%3e%3cline x1='7.76' y1='7.76' x2='4.93' y2='4.93'/%3e%3cmove-to x='16.24' y='16.24'/%3e%3cline x1='19.07' y1='19.07' x2='16.24' y2='16.24'/%3e%3cpath d='M2 12h2'/%3e%3cpath d='M20 12h2'/%3e%3cmove-to x='4.93' y='19.07'/%3e%3cline x1='7.76' y1='16.24' x2='4.93' y2='19.07'/%3e%3cmove-to x='16.24' y='7.76'/%3e%3cline x1='19.07' y1='4.93' x2='16.24' y2='7.76'/%3e%3c/svg%3e`;
              const iconMoon = `data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpath d='M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z'/%3e%3c/svg%3e`;
              const iconTimer = `data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3ccircle cx='12' cy='12' r='10'/%3e%3cpolyline points='12 6 12 12 16 14'/%3e%3c/svg%3e`;
-
              window.renderSequence = () => {
                  sequencePreview.innerHTML = '';
                  if (flashSequence.length === 0) {
@@ -482,7 +451,6 @@
                  }
                  sequenceStringDisplay.textContent = `flashStatus: "${flashSequence.join(',')}"`;
              };
-
              document.getElementById('btn-on').addEventListener('click', () => { flashSequence.push('on'); renderSequence(); });
              document.getElementById('btn-off').addEventListener('click', () => { flashSequence.push('off'); renderSequence(); });
              document.getElementById('btn-reset').addEventListener('click', () => { flashSequence = []; renderSequence(); });
@@ -503,7 +471,6 @@
                      delayModalOverlay.classList.add('hidden');
                  } else { showToast("Invalid number.", "error"); }
              });
-
              window.setMode = (mode) => {
                  currentSourceMode = mode;
                  document.getElementById('btn-mode-manual').classList.toggle('active', mode === 'manual');
@@ -541,7 +508,6 @@
                     if (success) { input.value = ''; showToast(`Searching for "${searchTerm}"...`, 'success'); }
                 }
             });
-
             document.getElementById('btn-apply-all').addEventListener('click', async () => {
                 saveSettingsToLocal();
                 let payload = {};
@@ -557,7 +523,6 @@
                 }
                 
                 const success = await updateFirestoreData(sequenceDocRef, payload, false);
-
                 if(success) {
                     showToast("Advanced settings applied!", "success");
                     await updateFirestoreData(modeDocRef, { mode: 'sequence' });
@@ -585,7 +550,6 @@
                         document.getElementById('json-key').value = data.apiKey || '';
                         
                         saveSettingsToLocal();
-
                         showToast("Settings synced successfully!", "success");
                     } else { showToast("No settings found on server.", "error"); }
                 } catch (error) {
@@ -593,26 +557,22 @@
                     console.error("Error syncing settings:", error);
                 }
             });
-
             document.getElementById('api-test-btn').addEventListener('click', async () => {
                 const apiUrl = document.getElementById('api-url').value;
                 const apiKey = document.getElementById('json-key').value;
                 const apiResultEl = document.getElementById('api-result');
                 
                 if (!apiUrl || !apiKey) return showToast("URL and Key must be filled.", "error");
-
                 apiResultEl.classList.remove('hidden');
                 apiResultEl.textContent = "Fetching...";
                 
                 const result = await fetchApiData(apiUrl, apiKey);
-
                 if (result.success) {
                     apiResultEl.textContent = `SUCCESS!\n\nExtracted Value:\n${JSON.stringify(result.data, null, 2)}\n\n---\n\nRaw Response:\n${JSON.stringify(result.raw, null, 2)}`;
                 } else {
                     apiResultEl.textContent = `FAILED!\n\nError: ${result.error}`;
                 }
             });
-
             modeSelector.addEventListener('change', async (e) => {
                 const newMode = e.target.value;
                 currentAppMode = newMode;
@@ -620,10 +580,16 @@
                 await updateFirestoreData(modeDocRef, { mode: newMode });
                 updateUIForMode(newMode);
             });
-
             document.getElementById('logout-btn').addEventListener('click', async () => {
                 try {
+                    // Clear application-specific data from localStorage for a clean session.
+                    if (typeof window !== 'undefined') {
+                        localStorage.removeItem(LOCAL_SETTINGS_KEY);
+                        localStorage.removeItem(LOCAL_KEY);
+                        console.log("Application settings cleared from local storage.");
+                    }
                     await signOut(auth);
+                    // The onAuthStateChanged listener will handle UI updates.
                     showToast("You have been logged out.", "success");
                 } catch (error) {
                     console.error("Logout Error:", error);
@@ -631,7 +597,6 @@
                 }
             });
         };
-
         // --- Main App Initialization ---
         const startApp = () => {
             if (isAppInitialized) return;
@@ -650,12 +615,10 @@
             listenToAppMode();
             updateUIForMode(currentAppMode); 
         };
-
         // --- Authentication Handling ---
         const setupAuthHandlers = () => {
             const loginForm = document.getElementById('login-form');
             const loginBtn = document.getElementById('login-btn');
-
             loginForm.addEventListener('submit', async (e) => {
                 e.preventDefault();
                 loginBtn.disabled = true;
@@ -674,7 +637,6 @@
                 }
             });
         };
-
         // --- PWA Service Worker Registration ---
         const registerServiceWorker = () => {
             if ('serviceWorker' in navigator) {
@@ -689,7 +651,6 @@
                 });
             }
         };
-
         // --- App Entry Point ---
         document.addEventListener('DOMContentLoaded', async () => {
             try {
@@ -697,7 +658,6 @@
                 auth = getAuth(app);
                 
                 await setPersistence(auth, browserLocalPersistence);
-
                 onAuthStateChanged(auth, (user) => {
                     loadingIndicator.classList.add('hidden');
                     if (user) {
@@ -710,18 +670,14 @@
                         detachListenersAndResetState();
                     }
                 });
-
                 setupAuthHandlers();
                 registerServiceWorker();
-
             } catch (error) {
                 console.error("Firebase Initialization Error:", error);
                 loadingIndicator.classList.add('hidden');
                 document.body.innerHTML = '<div class="text-white text-center p-8">Could not connect to services. Please try again later.</div>'
             }
         });
-
     </script>
 </body>
 </html>
-
