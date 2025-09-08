@@ -6,74 +6,162 @@
     <title>Nocturnal by Heri Sanjaya</title>
     <!-- PWA Meta Tags -->
     <meta name="description" content="A control panel for a remote flashlight via Firebase.">
-    <meta name="theme-color" content="#1a1a1a"/>
+    <meta name="theme-color" content="#0a0a0a"/>
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <meta name="apple-mobile-web-app-title" content="Control">
-    <!-- Link to Manifest in the correct folder -->
+    <meta name="apple-mobile-web-app-title" content="Nocturnal">
+    <!-- Link to Manifest -->
     <link rel="manifest" href="./manifest.json">
-    <!-- Apple Touch Icon (assuming icon is in /icons/ folder) -->
+    <!-- Apple Touch Icon -->
     <link rel="apple-touch-icon" href="/icons/icon192.png">
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     
     <style>
-        html, body { height: 100%; overflow: hidden; font-family: 'Inter', sans-serif; background-color: #0a0a0a; color: #e5e5e5; }
-        .card { background-color: #1a1a1a; border: 1px solid #2a2a2a; }
-        .form-input { background-color: #2a2a2a; border: 1px solid #3a3a3a; color: #e5e5e5; }
-        .form-input:focus { outline: none; border-color: #4f46e5; box-shadow: 0 0 0 2px #4f46e5; }
+        :root {
+            --glow-color: #facc15;
+            --secondary-glow: #eab308;
+            --dark-bg: #0a0a0a;
+            --card-bg: #1a1a1a;
+            --border-color: #2a2a2a;
+        }
+
+        html, body { 
+            height: 100%; 
+            overflow: hidden; 
+            font-family: 'Inter', sans-serif; 
+            background-color: var(--dark-bg); 
+            color: #e5e5e5;
+            background-image: radial-gradient(circle at 50% 10%, rgba(250, 204, 21, 0.07) 0%, rgba(10, 10, 10, 1) 40%);
+        }
+
+        .card { 
+            background-color: var(--card-bg); 
+            border: 1px solid var(--border-color);
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
+        }
+        
+        .glass-card {
+            background: rgba(26, 26, 26, 0.5);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(42, 42, 42, 0.7);
+            box-shadow: 0 0 40px rgba(0, 0, 0, 0.5), inset 0 0 10px rgba(255, 255, 255, 0.05);
+        }
+
+        .form-input { 
+            background-color: #2a2a2a; 
+            border: 1px solid #3a3a3a; 
+            color: #e5e5e5;
+            transition: all 0.2s ease;
+        }
+        .form-input::placeholder { color: #555; }
+        .form-input:focus { 
+            outline: none; 
+            border-color: var(--glow-color); 
+            box-shadow: 0 0 0 2px var(--glow-color); 
+            background-color: #333;
+        }
+        
         .btn { transition: all 0.2s ease; }
         .btn:disabled { opacity: 0.5; cursor: not-allowed; }
-        .btn-primary { background-color: #4f46e5; color: white; }
-        .btn-primary:hover:not(:disabled) { background-color: #4338ca; }
-        .btn-secondary { background-color: #3a3a3a; }
+        
+        .btn-primary { 
+            background-color: var(--glow-color); 
+            color: var(--dark-bg); 
+            font-weight: 700;
+            text-shadow: none;
+        }
+        .btn-primary:hover:not(:disabled) { 
+            background-color: var(--secondary-glow); 
+            transform: translateY(-2px);
+            box-shadow: 0 4px 15px rgba(250, 204, 21, 0.3);
+        }
+        
+        .btn-secondary { 
+            background-color: #3a3a3a;
+            border: 1px solid #4a4a4a;
+        }
         .btn-secondary:hover:not(:disabled) { background-color: #4a4a4a; }
-        .sequence-item { display: inline-flex; align-items: center; padding: 4px 10px; border-radius: 9999px; margin: 4px; font-size: 0.875rem; font-weight: 500; }
-        .item-on { background-color: #166534; color: #bbf7d0; }
-        .item-off { background-color: #991b1b; color: #fecaca; }
-        .item-delay { background-color: #1e3a8a; color: #bfdbfe; }
-        .item-strobe { background-color: #5b21b6; color: #ddd6fe; } /* BARU: Style untuk Strobe */
-        .mode-switch-btn { background-color: transparent; border: 1px solid #3a3a3a; color: #a0a0a0; }
-        .mode-switch-btn.active { background-color: #4f46e5; color: white; border-color: #4f46e5; }
-        #toast { position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); z-index: 1000; }
+        
+        .glow-text {
+            color: var(--glow-color);
+            text-shadow: 0 0 8px var(--glow-color), 0 0 15px var(--glow-color);
+        }
+        
+        @keyframes pulse {
+            0%, 100% { filter: drop-shadow(0 0 15px var(--glow-color)) drop-shadow(0 0 30px var(--secondary-glow)); }
+            50% { filter: drop-shadow(0 0 25px var(--glow-color)) drop-shadow(0 0 50px var(--secondary-glow)); }
+        }
+
+        .icon-decoration {
+            animation: pulse 4s infinite ease-in-out;
+        }
+
+        .icon-sm { width: 1rem; height: 1rem; }
+
+        .sequence-item { 
+            display: inline-flex; 
+            align-items: center; 
+            padding: 4px 10px; 
+            border-radius: 9999px; 
+            margin: 4px; 
+            font-size: 0.875rem; 
+            font-weight: 500;
+            border: 1px solid rgba(255,255,255,0.1);
+        }
+        .item-on { background-color: #f59e0b; color: #0a0a0a; font-weight: 600; }
+        .item-off { background-color: #4b5563; color: #d1d5db; }
+        .item-delay { background-color: #d97706; color: #fef3c7; }
+        .item-strobe { background-color: #b45309; color: #fefce8; }
+
+        .mode-switch-btn { 
+            background-color: transparent; 
+            border: 1px solid #3a3a3a; 
+            color: #a0a0a0; 
+        }
+        .mode-switch-btn.active { 
+            background-color: var(--glow-color); 
+            color: var(--dark-bg); 
+            border-color: var(--glow-color);
+            font-weight: 600;
+        }
+
         .power-button {
             width: 200px; height: 200px; border-radius: 50%;
             background: radial-gradient(circle, #2a2a2a 0%, #1a1a1a 100%);
             border: 4px solid #3a3a3a;
             box-shadow: 0 0 20px rgba(0,0,0,0.5), inset 0 0 10px rgba(0,0,0,0.5);
-            transition: all 0.2s ease;
+            transition: all 0.3s ease-in-out;
         }
         .power-button img {
-            filter: grayscale(1) brightness(0.7);
-            transition: all 0.2s ease;
+            filter: grayscale(1) brightness(0.6);
+            transition: all 0.3s ease-in-out;
         }
         .power-button.active {
-            background: radial-gradient(circle, #16a34a 0%, #15803d 100%);
-            border-color: #22c55e;
-            box-shadow: 0 0 25px #22c55e, inset 0 0 15px rgba(34,197,94,0.5);
+            background: radial-gradient(circle, var(--secondary-glow) 0%, #b45309 100%);
+            border-color: var(--glow-color);
+            box-shadow: 0 0 25px var(--glow-color), 0 0 45px var(--secondary-glow), inset 0 0 15px rgba(250, 204, 21, 0.4);
         }
         .power-button.active img {
-            filter: grayscale(0) brightness(1);
+            filter: brightness(1.2) drop-shadow(0 0 8px rgba(255, 255, 255, 0.7));
+            transform: scale(1.05);
         }
-        .icon-sm { width: 1rem; height: 1rem; }
-        .auth-tab { border-bottom: 2px solid transparent; }
-        .auth-tab.active { border-bottom-color: #4f46e5; color: #e5e5e5; }
-        #sequence-preview {
-            scroll-behavior: smooth;
-        }
+
+        #sequence-preview { scroll-behavior: smooth; }
     </style>
 </head>
 <body class="overscroll-none">
     <!-- Loading Indicator -->
     <div id="loading-indicator" class="fixed inset-0 z-50 flex items-center justify-center bg-[#0a0a0a]">
-        <p class="text-white text-lg animate-pulse">Initializing...</p>
+        <p class="text-white text-lg animate-pulse glow-text">Initializing...</p>
     </div>
-    <!-- Login Screen (initially hidden) -->
+
+    <!-- Login Screen -->
     <div id="login-screen" class="fixed inset-0 bg-[#0a0a0a] z-40 flex items-center justify-center p-4 hidden">
         <div class="w-full max-w-md">
-            <div class="card rounded-lg p-8 shadow-2xl">
-                <img src="./transparent.png" alt="Nocturnal Logo" class="w-24 h-auto mx-auto mb-4">
-                <h2 class="text-3xl font-bold text-center mb-2">Nocturnal</h2>
+            <div class="glass-card rounded-2xl p-8 shadow-2xl">
+                <img src="./transparent.png" alt="Nocturnal Logo" class="icon-decoration w-24 h-auto mx-auto mb-4">
+                <h2 class="text-4xl font-bold text-center mb-2 glow-text">Nocturnal</h2>
                 <p class="text-center text-gray-400 mb-8">Please sign in to continue</p>
                 
                 <form id="login-form" class="space-y-6 mt-8">
@@ -85,13 +173,14 @@
                         <label for="login-password" class="block text-sm font-medium text-gray-400 mb-2">Password</label>
                         <input type="password" id="login-password" class="form-input w-full rounded-md p-3" required>
                     </div>
-                    <button type="submit" id="login-btn" class="btn btn-primary w-full py-3 rounded-md font-semibold">Sign In</button>
+                    <button type="submit" id="login-btn" class="btn btn-primary w-full py-3 rounded-md">Sign In</button>
                 </form>
                 
                 <p id="auth-error" class="text-red-400 text-center mt-4 text-sm"></p>
             </div>
         </div>
     </div>
+
     <!-- Main App Content (Hidden by default) -->
     <div id="main-app-content" class="h-full hidden">
         <!-- Drawer -->
@@ -100,94 +189,94 @@
             <button id="close-drawer-btn" class="absolute top-4 right-4 text-gray-400 hover:text-white bg-gray-800/50 rounded-full p-1">
                 <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
             </button>
-            <h2 class="text-2xl font-bold mb-6">Settings</h2>
+            <h2 class="text-3xl font-bold mb-6 glow-text">Settings</h2>
             
             <div class="space-y-6">
                 <div class="card rounded-lg p-6">
-                    <h3 class="text-xl font-semibold flex items-center gap-2 mb-4">
+                    <h3 class="text-xl font-semibold flex items-center gap-3 mb-4 text-yellow-400">
                          <img src="data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='%23facc15' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpath d='M13 2L3 14h9l-1 8 10-12h-9l1-8z'/%3e%3c/svg%3e" class="w-6 h-6"/>
-                        Visual Flash Sequencer
+                         Visual Flash Sequencer
                     </h3>
                     <div id="sequence-preview" class="h-40 overflow-y-auto bg-black/50 rounded-md p-3 mb-4 flex flex-wrap items-start content-start border border-dashed border-gray-600"></div>
                     <div class="flex flex-wrap justify-center gap-3 mb-4">
-                        <button id="btn-on" class="btn bg-green-800 hover:bg-green-700 text-green-200 px-4 py-2 rounded-md font-medium flex items-center gap-2">
+                        <button id="btn-on" class="btn bg-yellow-500 hover:bg-yellow-400 text-black px-4 py-2 rounded-md font-bold flex items-center gap-2">
                             <img src="data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3ccircle cx='12' cy='12' r='4'/%3e%3cpath d='M12 2v2'/%3e%3cpath d='M12 20v2'/%3e%3cmove-to x='4.93' y='4.93'/%3e%3cline x1='7.76' y1='7.76' x2='4.93' y2='4.93'/%3e%3cmove-to x='16.24' y='16.24'/%3e%3cline x1='19.07' y1='19.07' x2='16.24' y2='16.24'/%3e%3cpath d='M2 12h2'/%3e%3cpath d='M20 12h2'/%3e%3cmove-to x='4.93' y='19.07'/%3e%3cline x1='7.76' y1='16.24' x2='4.93' y2='19.07'/%3e%3cmove-to x='16.24' y='7.76'/%3e%3cline x1='19.07' y1='4.93' x2='16.24' y2='7.76'/%3e%3c/svg%3e" class="icon-sm"/>ON
                         </button>
-                        <button id="btn-off" class="btn bg-red-800 hover:bg-red-700 text-red-200 px-4 py-2 rounded-md font-medium flex items-center gap-2">
-                             <img src="data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpath d='M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z'/%3e%3c/svg%3e" class="icon-sm"/>OFF
+                        <button id="btn-off" class="btn bg-gray-700 hover:bg-gray-600 text-gray-300 px-4 py-2 rounded-md font-medium flex items-center gap-2">
+                            <img src="data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpath d='M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z'/%3e%3c/svg%3e" class="icon-sm"/>OFF
                         </button>
-                        <button id="btn-add-delay" class="btn bg-blue-800 hover:bg-blue-700 text-blue-200 px-4 py-2 rounded-md font-medium flex items-center gap-2">
+                        <button id="btn-add-delay" class="btn bg-amber-700 hover:bg-amber-600 text-amber-100 px-4 py-2 rounded-md font-medium flex items-center gap-2">
                             <img src="data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3ccircle cx='12' cy='12' r='10'/%3e%3cpolyline points='12 6 12 12 16 14'/%3e%3c/svg%3e" class="icon-sm"/>Delay...
                         </button>
-                        <button id="btn-strobe" class="btn bg-indigo-800 hover:bg-indigo-700 text-indigo-200 px-4 py-2 rounded-md font-medium flex items-center gap-2">
+                        <button id="btn-strobe" class="btn bg-orange-800 hover:bg-orange-700 text-orange-100 px-4 py-2 rounded-md font-medium flex items-center gap-2">
                            <img src="data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolygon points='13 2 3 14 12 14 11 22 21 10 12 10 13 2'/%3e%3c/svg%3e" class="icon-sm"/>Strobe...
                         </button>
                         <button id="btn-undo" class="btn btn-secondary px-4 py-2 rounded-md font-medium flex items-center gap-2">
                             <img src="data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpath d='M21 7v6h-6'/%3e%3cpath d='M3 17a9 9 0 0 1 9-9 9 9 0 0 1 6 2.3l3 2.7'/%3e%3c/svg%3e" class="icon-sm"/>Undo
                         </button>
-                        <button id="btn-reset" class="btn bg-red-800/50 hover:bg-red-700/50 text-red-300 px-4 py-2 rounded-md font-medium flex items-center gap-2">
+                        <button id="btn-reset" class="btn bg-red-900/60 hover:bg-red-800/60 text-red-300 px-4 py-2 rounded-md font-medium flex items-center gap-2">
                             <img src="data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpath d='M3 6h18'/%3e%3cpath d='M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2'/%3e%3c/svg%3e" class="icon-sm"/>Reset
                         </button>
                     </div>
-                    <code id="sequence-string" class="hidden"></code>
                 </div>
                 <div class="card rounded-lg p-6">
-                     <h3 class="text-xl font-semibold flex items-center gap-2 mb-4">
-                         <img src="data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='%2322d3ee' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cellipse cx='12' cy='5' rx='9' ry='3'/%3e%3cpath d='M21 12c0 1.66-4 3-9 3s-9-1.34-9-3'/%3e%3cpath d='M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5'/%3e%3c/svg%3e" class="w-6 h-6"/>
-                        Data Source & API
-                     </h3>
-                     <div class="p-1 bg-gray-900/50 rounded-lg flex gap-1 mb-4">
+                    <h3 class="text-xl font-semibold flex items-center gap-3 mb-4 text-gray-300">
+                         <img src="data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='%239ca3af' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cellipse cx='12' cy='5' rx='9' ry='3'/%3e%3cpath d='M21 12c0 1.66-4 3-9 3s-9-1.34-9-3'/%3e%3cpath d='M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5'/%3e%3c/svg%3e" class="w-6 h-6"/>
+                         Data Source & API
+                    </h3>
+                    <div class="p-1 bg-gray-900/50 rounded-lg flex gap-1 mb-4">
                         <button id="btn-mode-manual" class="mode-switch-btn w-1/2 py-2 rounded-md">Manual</button>
                         <button id="btn-mode-api" class="mode-switch-btn w-1/2 py-2 rounded-md">API</button>
-                     </div>
-                     <div id="form-manual" class="hidden">
-                         <p class="text-sm text-gray-400 mb-2">Text to search after sequence runs.</p>
-                         <textarea id="manual-query" class="form-input w-full rounded-md p-3 h-24" placeholder="Example: Queen of Hearts"></textarea>
-                     </div>
-                     <div id="form-api" class="hidden">
-                         <p class="text-sm text-gray-400 mb-2">API to fetch search query from.</p>
-                         <input type="url" id="api-url" class="form-input w-full rounded-md p-3 mb-3" placeholder="Your API URL">
-                         <input type="text" id="json-key" class="form-input w-full rounded-md p-3" placeholder="JSON Key">
-                         <button id="api-test-btn" class="btn btn-secondary w-full py-2 rounded-lg font-semibold mt-4">Test API</button>
-                         <pre id="api-result" class="hidden mt-2 w-full h-24 bg-black/50 border border-gray-600 rounded-md p-2 text-xs overflow-auto whitespace-pre-wrap word-break-all"></pre>
-                     </div>
+                    </div>
+                    <div id="form-manual" class="hidden">
+                        <p class="text-sm text-gray-400 mb-2">Text to search after sequence runs.</p>
+                        <textarea id="manual-query" class="form-input w-full rounded-md p-3 h-24" placeholder="Example: Queen of Hearts"></textarea>
+                    </div>
+                    <div id="form-api" class="hidden">
+                        <p class="text-sm text-gray-400 mb-2">API to fetch search query from.</p>
+                        <input type="url" id="api-url" class="form-input w-full rounded-md p-3 mb-3" placeholder="Your API URL">
+                        <input type="text" id="json-key" class="form-input w-full rounded-md p-3" placeholder="JSON Key (e.g., value)">
+                        <button id="api-test-btn" class="btn btn-secondary w-full py-2 rounded-lg font-semibold mt-4">Test API</button>
+                        <pre id="api-result" class="hidden mt-2 w-full h-24 bg-black/50 border border-gray-600 rounded-md p-2 text-xs overflow-auto"></pre>
+                    </div>
                 </div>
-                 <div class="flex gap-3 mt-2">
-                     <button id="btn-sync-settings" class="btn btn-secondary w-1/2 py-2.5 rounded-lg font-semibold flex items-center justify-center gap-2">
-                         <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/><path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16"/><path d="M3 21v-5h5"/></svg>
-                         Sync Settings
-                     </button>
-                     <a href="https://nocturnalmagic.vercel.app/guide.html" target="_blank" class="btn btn-secondary w-1/2 py-2.5 rounded-lg font-semibold flex items-center justify-center gap-2">
-                         <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
-                         Instructions
-                     </a>
-                 </div>
-                 <button id="btn-apply-all" class="btn btn-primary w-full py-3 rounded-lg font-semibold mt-4">Apply Sequence Settings</button>
-                 <button id="logout-btn" class="btn bg-red-800/50 hover:bg-red-700/50 text-red-300 w-full py-2.5 rounded-lg font-semibold flex items-center justify-center gap-2 mt-6 mb-4">
-                     <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
-                     Logout
-                 </button>
-                 <div class="text-center text-xs text-gray-600 mt-8">
-                    Nocturnal<br>Heri Sanjaya
-                 </div>
+                <div class="flex gap-3 mt-2">
+                    <button id="btn-sync-settings" class="btn btn-secondary w-1/2 py-2.5 rounded-lg font-semibold flex items-center justify-center gap-2">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/><path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16"/><path d="M3 21v-5h5"/></svg>
+                        Sync Settings
+                    </button>
+                    <a href="https://nocturnalmagic.vercel.app/guide.html" target="_blank" class="btn btn-secondary w-1/2 py-2.5 rounded-lg font-semibold flex items-center justify-center gap-2">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+                        Instructions
+                    </a>
+                </div>
+                <button id="btn-apply-all" class="btn btn-primary w-full py-3 rounded-lg mt-4">Apply Sequence Settings</button>
+                <button id="logout-btn" class="btn bg-red-800/50 hover:bg-red-700/50 text-red-300 w-full py-2.5 rounded-lg font-semibold flex items-center justify-center gap-2 mt-6 mb-4">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+                    Logout
+                </button>
+                <div class="text-center text-xs text-gray-600 mt-8">Nocturnal by Heri Sanjaya</div>
             </div>
         </aside>
+
         <!-- Main Content Area -->
         <div class="relative h-full flex flex-col items-center justify-center p-4">
             <!-- Setting Button -->
-            <button id="settings-btn" class="absolute top-4 left-4 text-white z-10">
-                <img src="data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='white' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3ccircle cx='12' cy='12' r='3'/%3e%3cpath d='M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z'/%3e%3c/svg%3e" class="w-8 h-8"/>
+            <button id="settings-btn" class="absolute top-4 left-4 text-white z-10 p-2 bg-black/20 rounded-full hover:bg-black/40 transition-colors">
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>
             </button>
-            <!-- Dropdown to select mode -->
+            
+            <!-- Mode Selector -->
             <div class="fixed top-4 left-1/2 -translate-x-1/2 z-20">
                 <select id="mode-selector" class="form-input rounded-full pl-4 pr-10 py-2 text-sm text-center appearance-none cursor-pointer">
                     <option value="remote">Remote</option>
                     <option value="sequence">Sequence</option>
                 </select>
-                <div class="absolute inset-y-0 right-2 flex items-center pr-2 pointer-events-none">
+                <div class="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
                     <svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
                 </div>
             </div>
+
             <!-- Remote Control Panel -->
             <div id="remote-control-panel" class="w-full flex flex-col items-center gap-12 max-w-sm">
                 <button id="power-btn" class="power-button flex items-center justify-center">
@@ -195,35 +284,40 @@
                 </button>
                 <form id="search-form" class="w-full flex flex-col gap-3">
                     <input type="text" id="search-input" class="form-input w-full rounded-md p-3 text-center" placeholder="Input target data for Google Search">
-                    <button type="submit" class="btn btn-primary w-full py-3 rounded-md font-semibold">Search</button>
+                    <button type="submit" class="btn btn-primary w-full py-3 rounded-md">Search</button>
                 </form>
             </div>
+            
             <!-- Sequence Settings Panel (Hidden by default) -->
             <div id="sequence-panel" class="w-full flex flex-col items-center justify-center gap-6 max-w-sm hidden">
-                 <h2 class="text-xl font-semibold text-center text-gray-400">Sequence Mode</h2>
-                <p class="text-gray-500 text-center">Use the gear icon to create and apply a flash sequence.</p>
+                 <h2 class="text-xl font-semibold text-center text-gray-400">Sequence Mode Active</h2>
+                 <p class="text-gray-500 text-center">Use the gear icon <br>to create and apply a flash sequence.</p>
             </div>
         </div>
-        <!-- Modal Jeda -->
+
+        <!-- Modal -->
         <div id="delay-modal-overlay" class="fixed inset-0 bg-black/70 flex items-center justify-center p-4 hidden z-50">
-            <div class="bg-[#1a1a1a] border border-[#2a2a2a] rounded-lg p-6 w-full max-w-sm shadow-2xl">
-                <h3 id="modal-title" class="text-xl font-semibold mb-4">Set Duration</h3>
+            <div class="glass-card rounded-lg p-6 w-full max-w-sm shadow-2xl">
+                <h3 id="modal-title" class="text-xl font-semibold mb-4 glow-text">Set Duration</h3>
                 <p class="text-sm text-gray-400 mb-2">Enter duration in seconds.</p>
                 <input type="number" id="delay-input" class="form-input w-full rounded-md p-3" placeholder="Example: 1.5">
                 <div class="mt-6 flex gap-3">
                     <button id="btn-cancel-delay" class="btn btn-secondary w-1/2 py-2.5 rounded-lg font-semibold">Cancel</button>
-                    <button id="btn-save-delay" class="btn btn-primary w-1/2 py-2.5 rounded-lg font-semibold">Save</button>
+                    <button id="btn-save-delay" class="btn btn-primary w-1/2 py-2.5 rounded-lg">Save</button>
                 </div>
             </div>
         </div>
         
         <!-- Toast -->
-        <div id="toast" class="p-3 rounded-md text-white text-center opacity-0 transition-opacity duration-300 fixed bottom-5 left-1/2 -translate-x-1/2"></div>
+        <div id="toast" class="p-3 rounded-md text-white text-center opacity-0 transition-opacity duration-300 fixed bottom-5 left-1/2 -translate-x-1/2 z-[60]"></div>
     </div>
+
+    <!-- The entire JavaScript logic remains unchanged -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
         import { getFirestore, doc, setDoc, getDoc, onSnapshot, updateDoc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
         import { getAuth, onAuthStateChanged, signInWithEmailAndPassword, signOut, setPersistence, browserLocalPersistence } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+        
         const firebaseConfig = {
           apiKey: "AIzaSyCg1wk1dIijIXcRfoXwDCeVNstktcAhopY",
           authDomain: "nocturnal-asiaa.firebaseapp.com",
@@ -232,6 +326,7 @@
           messagingSenderId: "39095161997",
           appId: "1:39095161997:web:bd414fef8b17e3cecdbec4"
         };
+        
         // --- App State ---
         let app, db, auth;
         let signalDocRef, sequenceDocRef, modeDocRef;
@@ -248,7 +343,8 @@
         const SAVE_LOCAL = true;
         const LOCAL_KEY = 'signal';
         const LOCAL_SETTINGS_KEY = 'nocturnal_advanced_settings';
-        let currentModalAction = 'delay'; // BARU: 'delay' atau 'strobe'
+        let currentModalAction = 'delay';
+        
         // --- UI Elements ---
         const loadingIndicator = document.getElementById('loading-indicator');
         const loginScreen = document.getElementById('login-screen');
@@ -260,10 +356,18 @@
         const remotePanel = document.getElementById('remote-control-panel');
         const sequencePanel = document.getElementById('sequence-panel');
         const authError = document.getElementById('auth-error');
+        
         // --- Helper Functions ---
         const showToast = (message, type = 'success') => {
              const el = document.getElementById('toast');
-             el.className = `p-3 rounded-md text-white text-center transition-opacity duration-300 ${type === 'success' ? 'bg-green-600' : 'bg-red-600'}`;
+             // Hapus kelas warna sebelumnya
+             el.classList.remove('bg-green-600', 'bg-red-600');
+             // Tambah kelas warna yang sesuai
+             if (type === 'success') {
+                 el.classList.add('bg-green-600');
+             } else {
+                 el.classList.add('bg-red-600');
+             }
              el.textContent = message;
              el.classList.remove('opacity-0');
              setTimeout(() => el.classList.add('opacity-0'), 3000);
@@ -274,6 +378,7 @@
                  return path.replace(/\[(\w+)\]/g, '.$1').split('.').reduce((o, k) => (o || {})[k], obj);
              } catch (e) { return undefined; }
         };
+        
         const mergeSignalState = (newData) => {
              if (!newData || typeof newData !== 'object') return;
              lastKnownSignalState = { ...lastKnownSignalState, ...newData };
@@ -286,6 +391,7 @@
                  }
              }
         };
+        
         const saveSettingsToLocal = () => {
              if (typeof window === 'undefined') return;
              try {
@@ -295,7 +401,7 @@
                      manualQuery: document.getElementById('manual-query').value,
                      apiUrl: document.getElementById('api-url').value,
                      jsonKey: document.getElementById('json-key').value,
-                     currentAppMode: currentAppMode // Save current app mode
+                     currentAppMode: currentAppMode
                  };
                  localStorage.setItem(LOCAL_SETTINGS_KEY, JSON.stringify(settings));
                  console.log("Settings saved to localStorage.");
@@ -303,6 +409,7 @@
                  console.error('Failed to save settings to localStorage:', err);
              }
         };
+        
         const loadSettingsFromLocal = () => {
              if (typeof window === 'undefined') return;
              try {
@@ -321,6 +428,7 @@
                  console.error('Failed to load settings from localStorage:', err);
              }
         };
+        
         const fetchApiData = async (apiUrl, apiKey) => {
              try {
                  if (!apiUrl || !apiKey) throw new Error("API URL or Key is missing.");
@@ -338,9 +446,11 @@
                  return { success: false, error: userFriendlyError };
              }
         };
+        
         // --- Firebase Core Logic ---
         const listenToRemoteState = () => {
              if (isListenerAttached || !isAppInitialized) return;
+             const powerBtn = document.getElementById('power-btn');
              unsubscribeSignal = onSnapshot(signalDocRef, async (docSnap) => {
                  if (!docSnap.exists()) {
                      console.warn("Control document does not exist.");
@@ -376,8 +486,10 @@
              });
              isListenerAttached = true;
         };
+        
         const listenToAppMode = () => {
              if (!isAppInitialized) return;
+             const modeSelector = document.getElementById('mode-selector');
              unsubscribeMode = onSnapshot(modeDocRef, (docSnap) => {
                  const data = docSnap.data();
                  if (data && data.mode) {
@@ -403,6 +515,7 @@
            isFirstSnapshot = true; // Reset snapshot flag
            console.log("App state reset and listeners detached.");
         };
+        
         const updateFirestoreData = async (docRef, data, merge = true) => {
              try {
                  await setDoc(docRef, data, { merge: merge });
@@ -413,7 +526,10 @@
                  return false;
              }
         };
+        
         const updateUIForMode = (mode) => {
+             const remotePanel = document.getElementById('remote-control-panel');
+             const sequencePanel = document.getElementById('sequence-panel');
              if (mode === 'remote') {
                  remotePanel.classList.remove('hidden');
                  sequencePanel.classList.add('hidden');
@@ -425,240 +541,257 @@
 
         const renderSequence = () => {
             const sequencePreview = document.getElementById('sequence-preview');
-            const arrowIconSVG = `data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='%236b7280' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='9 18 15 12 9 6'/%3e%3c/svg%3e`;
-            const iconSun = `data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3ccircle cx='12' cy='12' r='4'/%3e%3cpath d='M12 2v2'/%3e%3cpath d='M12 20v2'/%3e%3cmove-to x='4.93' y='4.93'/%3e%3cline x1='7.76' y1='7.76' x2='4.93' y2='4.93'/%3e%3cmove-to x='16.24' y='16.24'/%3e%3cline x1='19.07' y1='19.07' x2='16.24' y2='16.24'/%3e%3cpath d='M2 12h2'/%3e%3cpath d='M20 12h2'/%3e%3cmove-to x='4.93' y='19.07'/%3e%3cline x1='7.76' y1='16.24' x2='4.93' y2='19.07'/%3e%3cmove-to x='16.24' y='7.76'/%3e%3cline x1='19.07' y1='4.93' x2='16.24' y2='7.76'/%3e%3c/svg%3e`;
-            const iconMoon = `data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpath d='M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z'/%3e%3c/svg%3e`;
-            const iconTimer = `data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3ccircle cx='12' cy='12' r='10'/%3e%3cpolyline points='12 6 12 12 16 14'/%3e%3c/svg%3e`;
-            const iconStrobe = `data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolygon points='13 2 3 14 12 14 11 22 21 10 12 10 13 2'/%3e%3c/svg%3e`;
-
             sequencePreview.innerHTML = '';
             if (flashSequence.length === 0) {
-                sequencePreview.innerHTML = '<span class="text-gray-500 italic">Build a sequence...</span>';
+                sequencePreview.innerHTML = '<span class="text-gray-500 italic p-2">Build a sequence...</span>';
             } else {
-                flashSequence.forEach((item, index) => {
+                flashSequence.forEach((item) => {
                     const el = document.createElement('div');
                     el.classList.add('sequence-item');
-                    let iconSVG = '', text = '';
+                    let text = '';
                     if (item === 'on') { 
-                        el.classList.add('item-on'); iconSVG = iconSun; text = 'ON'; 
+                        el.classList.add('item-on'); text = 'ON'; 
                     } else if (item === 'off') { 
-                        el.classList.add('item-off'); iconSVG = iconMoon; text = 'OFF'; 
+                        el.classList.add('item-off'); text = 'OFF'; 
                     } else if (typeof item === 'string' && item.startsWith('strobe_')) {
                         const duration = parseInt(item.split('_')[1]);
                         el.classList.add('item-strobe');
-                        iconSVG = iconStrobe;
                         text = `Strobe ${duration / 1000}s`;
                     } else if (typeof item === 'number') { 
-                        el.classList.add('item-delay'); iconSVG = iconTimer; text = `${item}ms`; 
+                        el.classList.add('item-delay'); text = `${item}ms`; 
                     }
-                    el.innerHTML = `<img src="${iconSVG}" class="icon-sm mr-1.5"/> ${text}`;
+                    
+                    const icon = document.createElement('img');
+                    icon.className = 'icon-sm mr-1.5';
+
+                    if (item === 'on') { 
+                        icon.src = "data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3ccircle cx='12' cy='12' r='4'/%3e%3cpath d='M12 2v2'/%3e%3cpath d='M12 20v2'/%3e%3cmove-to x='4.93' y='4.93'/%3e%3cline x1='7.76' y1='7.76' x2='4.93' y2='4.93'/%3e%3cmove-to x='16.24' y='16.24'/%3e%3cline x1='19.07' y1='19.07' x2='16.24' y2='16.24'/%3e%3cpath d='M2 12h2'/%3e%3cpath d='M20 12h2'/%3e%3cmove-to x='4.93' y='19.07'/%3e%3cline x1='7.76' y1='16.24' x2='4.93' y2='19.07'/%3e%3cmove-to x='16.24' y='7.76'/%3e%3cline x1='19.07' y1='4.93' x2='16.24' y2='7.76'/%3e%3c/svg%3e";
+                    } else if (item === 'off') {
+                        icon.src = "data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpath d='M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z'/%3e%3c/svg%3e";
+                    } else if (typeof item === 'string' && item.startsWith('strobe_')) {
+                        icon.src = "data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolygon points='13 2 3 14 12 14 11 22 21 10 12 10 13 2'/%3e%3c/svg%3e";
+                    } else if (typeof item === 'number') {
+                        icon.src = "data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3ccircle cx='12' cy='12' r='10'/%3e%3cpolyline points='12 6 12 12 16 14'/%3e%3c/svg%3e";
+                    }
+
+                    el.appendChild(icon);
+                    el.appendChild(document.createTextNode(text));
+
                     sequencePreview.appendChild(el);
-                    if (index < flashSequence.length - 1) {
-                        const arrow = document.createElement('img');
-                        arrow.src = arrowIconSVG;
-                        arrow.className = 'w-5 h-5 mx-1';
-                        sequencePreview.appendChild(arrow);
-                    }
                 });
             }
             sequencePreview.scrollTop = sequencePreview.scrollHeight;
         };
         
-        // --- UI Initialization and Action Handlers (will be called after login) ---
         const initializeAppUI = () => {
-             const openDrawer = () => {
-                 backdrop.classList.remove('hidden');
-                 drawer.classList.remove('-translate-x-full');
-             };
-             const closeDrawer = () => {
-                 drawer.classList.add('-translate-x-full');
-                 backdrop.classList.add('hidden');
-             };
-             document.getElementById('settings-btn').addEventListener('click', openDrawer);
-             document.getElementById('close-drawer-btn').addEventListener('click', closeDrawer);
-             backdrop.addEventListener('click', closeDrawer);
-             
-             window.setMode = (mode) => {
-                 currentSourceMode = mode;
-                 document.getElementById('btn-mode-manual').classList.toggle('active', mode === 'manual');
-                 document.getElementById('btn-mode-api').classList.toggle('active', mode === 'api');
-                 document.getElementById('form-manual').classList.toggle('hidden', mode !== 'manual');
-                 document.getElementById('form-api').classList.toggle('hidden', mode === 'manual');
-             };
-             document.getElementById('btn-mode-manual').addEventListener('click', () => setMode('manual'));
-             document.getElementById('btn-mode-api').addEventListener('click', () => setMode('api'));
-             
-             loadSettingsFromLocal(); 
-             renderSequence();
-             setMode(currentSourceMode);
-             modeSelector.value = currentAppMode;
+            const drawer = document.getElementById('drawer');
+            const backdrop = document.getElementById('drawer-backdrop');
+            const modeSelector = document.getElementById('mode-selector');
+
+            const openDrawer = () => {
+                backdrop.classList.remove('hidden');
+                drawer.classList.remove('-translate-x-full');
+            };
+            const closeDrawer = () => {
+                drawer.classList.add('-translate-x-full');
+                backdrop.classList.add('hidden');
+            };
+            document.getElementById('settings-btn').addEventListener('click', openDrawer);
+            document.getElementById('close-drawer-btn').addEventListener('click', closeDrawer);
+            backdrop.addEventListener('click', closeDrawer);
+            
+            window.setMode = (mode) => {
+                currentSourceMode = mode;
+                document.getElementById('btn-mode-manual').classList.toggle('active', mode === 'manual');
+                document.getElementById('btn-mode-api').classList.toggle('active', mode === 'api');
+                document.getElementById('form-manual').classList.toggle('hidden', mode !== 'manual');
+                document.getElementById('form-api').classList.toggle('hidden', mode === 'manual');
+            };
+            document.getElementById('btn-mode-manual').addEventListener('click', () => setMode('manual'));
+            document.getElementById('btn-mode-api').addEventListener('click', () => setMode('api'));
+            
+            loadSettingsFromLocal(); 
+            renderSequence();
+            setMode(currentSourceMode);
+            modeSelector.value = currentAppMode;
         };
         
         const attachActionHandlers = () => {
-             powerBtn.addEventListener('click', async () => {
-                 try {
-                     await updateDoc(signalDocRef, { powerState: !currentPowerState });
-                 } catch (err) {
-                     console.error("Failed to toggle powerState:", err);
-                     showToast("Failed to toggle power.", "error");
-                 }
-             });
-             
-             document.getElementById('search-form').addEventListener('submit', async (e) => {
-                 e.preventDefault();
-                 const input = document.getElementById('search-input');
-                 const searchTerm = input.value.trim();
-                 if (searchTerm) {
-                     const success = await updateFirestoreData(signalDocRef, { 
-                         searchCommand: { term: searchTerm, timestamp: Date.now() } 
-                     });
-                     if (success) { input.value = ''; showToast(`Searching for "${searchTerm}"...`, 'success'); }
-                 }
-             });
-             document.getElementById('btn-apply-all').addEventListener('click', async () => {
-                 saveSettingsToLocal();
-                 let payload = {};
-                 payload.flashStatus = flashSequence.join(',');
-                 
-                 if (currentSourceMode === 'manual') {
-                     payload.source = 'manual';
-                     payload.value = document.getElementById('manual-query').value;
-                 } else {
-                     payload.source = 'api';
-                     payload.apiUrl = document.getElementById('api-url').value;
-                     payload.apiKey = document.getElementById('json-key').value;
-                 }
-                 
-                 const success = await updateFirestoreData(sequenceDocRef, payload, false);
-                 if(success) {
-                     showToast("Advanced settings applied!", "success");
-                     await updateFirestoreData(modeDocRef, { mode: 'sequence' });
-                     document.getElementById('close-drawer-btn').click();
-                 }
-             });
-             
-             document.getElementById('btn-sync-settings').addEventListener('click', async () => {
-                 showToast("Syncing settings...", 'success');
-                 try {
-                     const docSnap = await getDoc(sequenceDocRef);
-                     if (docSnap.exists()) {
-                         const data = docSnap.data();
-                         
-                         if (data.flashStatus) {
-                             flashSequence = data.flashStatus.split(',').map(item => {
-                                 if (item.startsWith('strobe_')) return item;
-                                 return isNaN(parseInt(item)) ? item.trim() : parseInt(item);
-                             });
-                         } else { flashSequence = []; }
-                         
-                         renderSequence();
-                         
-                         const mode = data.source || 'manual';
-                         setMode(mode);
-                         document.getElementById('manual-query').value = data.value || '';
-                         document.getElementById('api-url').value = data.apiUrl || '';
-                         document.getElementById('json-key').value = data.apiKey || '';
-                         
-                         saveSettingsToLocal();
-                         showToast("Settings synced successfully!", "success");
-                     } else { showToast("No settings found on server.", "error"); }
-                 } catch (error) {
-                     showToast("Failed to sync settings.", "error");
-                     console.error("Error syncing settings:", error);
-                 }
-             });
-             document.getElementById('api-test-btn').addEventListener('click', async () => {
-                 const apiUrl = document.getElementById('api-url').value;
-                 const apiKey = document.getElementById('json-key').value;
-                 const apiResultEl = document.getElementById('api-result');
-                 
-                 if (!apiUrl || !apiKey) return showToast("URL and Key must be filled.", "error");
-                 apiResultEl.classList.remove('hidden');
-                 apiResultEl.textContent = "Fetching...";
-                 
-                 const result = await fetchApiData(apiUrl, apiKey);
-                 if (result.success) {
-                     apiResultEl.textContent = `SUCCESS!\n\nExtracted Value:\n${JSON.stringify(result.data, null, 2)}\n\n---\n\nRaw Response:\n${JSON.stringify(result.raw, null, 2)}`;
-                 } else {
-                     apiResultEl.textContent = `FAILED!\n\nError: ${result.error}`;
-                 }
-             });
-             modeSelector.addEventListener('change', async (e) => {
-                 const newMode = e.target.value;
-                 currentAppMode = newMode;
-                 saveSettingsToLocal();
-                 await updateFirestoreData(modeDocRef, { mode: newMode });
-                 updateUIForMode(newMode);
-             });
-             document.getElementById('logout-btn').addEventListener('click', async () => {
-                 try {
-                     if (typeof window !== 'undefined') {
-                         localStorage.removeItem(LOCAL_SETTINGS_KEY);
-                         localStorage.removeItem(LOCAL_KEY);
-                         console.log("Application settings cleared from local storage.");
-                     }
-                     await signOut(auth);
-                     showToast("You have been logged out.", "success");
-                 } catch (error) {
-                     console.error("Logout Error:", error);
-                     showToast("Logout failed.", "error");
-                 }
-             });
+            const powerBtn = document.getElementById('power-btn');
+            const modeSelector = document.getElementById('mode-selector');
+
+            powerBtn.addEventListener('click', async () => {
+                try {
+                    await updateDoc(signalDocRef, { powerState: !currentPowerState });
+                } catch (err) {
+                    console.error("Failed to toggle powerState:", err);
+                    showToast("Failed to toggle power.", "error");
+                }
+            });
+            
+            document.getElementById('search-form').addEventListener('submit', async (e) => {
+                e.preventDefault();
+                const input = document.getElementById('search-input');
+                const searchTerm = input.value.trim();
+                if (searchTerm) {
+                    const success = await updateFirestoreData(signalDocRef, { 
+                        searchCommand: { term: searchTerm, timestamp: Date.now() } 
+                    });
+                    if (success) { input.value = ''; showToast(`Searching for "${searchTerm}"...`, 'success'); }
+                }
+            });
+            
+            document.getElementById('btn-apply-all').addEventListener('click', async () => {
+                saveSettingsToLocal();
+                let payload = {};
+                payload.flashStatus = flashSequence.join(',');
+                
+                if (currentSourceMode === 'manual') {
+                    payload.source = 'manual';
+                    payload.value = document.getElementById('manual-query').value;
+                } else {
+                    payload.source = 'api';
+                    payload.apiUrl = document.getElementById('api-url').value;
+                    payload.apiKey = document.getElementById('json-key').value;
+                }
+                
+                const success = await updateFirestoreData(sequenceDocRef, payload, false);
+                if(success) {
+                    showToast("Advanced settings applied!", "success");
+                    await updateFirestoreData(modeDocRef, { mode: 'sequence' });
+                    document.getElementById('close-drawer-btn').click();
+                }
+            });
+            
+            document.getElementById('btn-sync-settings').addEventListener('click', async () => {
+                showToast("Syncing settings...", 'success');
+                try {
+                    const docSnap = await getDoc(sequenceDocRef);
+                    if (docSnap.exists()) {
+                        const data = docSnap.data();
+                        
+                        if (data.flashStatus) {
+                            flashSequence = data.flashStatus.split(',').map(item => {
+                                if (item.startsWith('strobe_')) return item;
+                                return isNaN(parseInt(item)) ? item.trim() : parseInt(item);
+                            });
+                        } else { flashSequence = []; }
+                        
+                        renderSequence();
+                        
+                        const mode = data.source || 'manual';
+                        setMode(mode);
+                        document.getElementById('manual-query').value = data.value || '';
+                        document.getElementById('api-url').value = data.apiUrl || '';
+                        document.getElementById('json-key').value = data.apiKey || '';
+                        
+                        saveSettingsToLocal();
+                        showToast("Settings synced successfully!", "success");
+                    } else { showToast("No settings found on server.", "error"); }
+                } catch (error) {
+                    showToast("Failed to sync settings.", "error");
+                    console.error("Error syncing settings:", error);
+                }
+            });
+            
+            document.getElementById('api-test-btn').addEventListener('click', async () => {
+                const apiUrl = document.getElementById('api-url').value;
+                const apiKey = document.getElementById('json-key').value;
+                const apiResultEl = document.getElementById('api-result');
+                
+                if (!apiUrl || !apiKey) return showToast("URL and Key must be filled.", "error");
+                apiResultEl.classList.remove('hidden');
+                apiResultEl.textContent = "Fetching...";
+                
+                const result = await fetchApiData(apiUrl, apiKey);
+                if (result.success) {
+                    apiResultEl.textContent = `SUCCESS!\n\nExtracted Value:\n${JSON.stringify(result.data, null, 2)}\n\n---\n\nRaw Response:\n${JSON.stringify(result.raw, null, 2)}`;
+                } else {
+                    apiResultEl.textContent = `FAILED!\n\nError: ${result.error}`;
+                }
+            });
+            
+            modeSelector.addEventListener('change', async (e) => {
+                const newMode = e.target.value;
+                currentAppMode = newMode;
+                saveSettingsToLocal();
+                await updateFirestoreData(modeDocRef, { mode: newMode });
+                updateUIForMode(newMode);
+            });
+            
+            document.getElementById('logout-btn').addEventListener('click', async () => {
+                try {
+                    if (typeof window !== 'undefined') {
+                        localStorage.removeItem(LOCAL_SETTINGS_KEY);
+                        localStorage.removeItem(LOCAL_KEY);
+                        console.log("Application settings cleared from local storage.");
+                    }
+                    await signOut(auth);
+                    showToast("You have been logged out.", "success");
+                } catch (error) {
+                    console.error("Logout Error:", error);
+                    showToast("Logout failed.", "error");
+                }
+            });
         };
+        
         // --- Main App Initialization ---
         const startApp = () => {
-             if (isAppInitialized) return;
-             
-             db = getFirestore(app);
-             signalDocRef = doc(db, 'control', 'signal');
-             sequenceDocRef = doc(db, 'control', 'sequence');
-             modeDocRef = doc(db, 'control', 'mode');
-             
-             isAppInitialized = true;
-             
-             initializeAppUI();
-             attachActionHandlers();
-             
-             listenToRemoteState();
-             listenToAppMode();
-             updateUIForMode(currentAppMode); 
+            if (isAppInitialized) return;
+            
+            db = getFirestore(app);
+            signalDocRef = doc(db, 'control', 'signal');
+            sequenceDocRef = doc(db, 'control', 'sequence');
+            modeDocRef = doc(db, 'control', 'mode');
+            
+            isAppInitialized = true;
+            
+            initializeAppUI();
+            attachActionHandlers();
+            
+            listenToRemoteState();
+            listenToAppMode();
+            updateUIForMode(currentAppMode); 
         };
+        
         // --- Authentication Handling ---
         const setupAuthHandlers = () => {
-             const loginForm = document.getElementById('login-form');
-             const loginBtn = document.getElementById('login-btn');
-             loginForm.addEventListener('submit', async (e) => {
-                 e.preventDefault();
-                 loginBtn.disabled = true;
-                 loginBtn.textContent = 'Verifying...';
-                 authError.textContent = '';
-                 const email = document.getElementById('login-email').value;
-                 const pass = document.getElementById('login-password').value;
-                 try {
-                     await signInWithEmailAndPassword(auth, email, pass);
-                 } catch (error) {
-                     authError.textContent = 'Incorrect email or password.';
-                     console.error('Login error:', error.message);
-                 } finally {
-                     loginBtn.disabled = false;
-                     loginBtn.textContent = 'Sign In';
-                 }
-             });
+            const loginForm = document.getElementById('login-form');
+            const loginBtn = document.getElementById('login-btn');
+            loginForm.addEventListener('submit', async (e) => {
+                e.preventDefault();
+                loginBtn.disabled = true;
+                loginBtn.textContent = 'Verifying...';
+                authError.textContent = '';
+                const email = document.getElementById('login-email').value;
+                const pass = document.getElementById('login-password').value;
+                try {
+                    await signInWithEmailAndPassword(auth, email, pass);
+                } catch (error) {
+                    authError.textContent = 'Incorrect email or password.';
+                    console.error('Login error:', error.message);
+                } finally {
+                    loginBtn.disabled = false;
+                    loginBtn.textContent = 'Sign In';
+                }
+            });
         };
+        
         // --- PWA Service Worker Registration ---
         const registerServiceWorker = () => {
-             if ('serviceWorker' in navigator) {
-                 window.addEventListener('load', () => {
-                 navigator.serviceWorker.register('./service-worker.js')
-                     .then((registration) => {
-                         console.log('Service Worker registered! Scope:', registration.scope);
-                     })
-                     .catch((error) => {
-                         console.error('Service Worker registration failed:', error);
-                     });
-                 });
-             }
+            if ('serviceWorker' in navigator) {
+                window.addEventListener('load', () => {
+                navigator.serviceWorker.register('./service-worker.js')
+                    .then((registration) => {
+                        console.log('Service Worker registered! Scope:', registration.scope);
+                    })
+                    .catch((error) => {
+                        console.error('Service Worker registration failed:', error);
+                    });
+                });
+            }
         };
+        
         // --- App Entry Point ---
         document.addEventListener('DOMContentLoaded', async () => {
             const delayModalOverlay = document.getElementById('delay-modal-overlay');
@@ -708,6 +841,9 @@
                  
                  await setPersistence(auth, browserLocalPersistence);
                  onAuthStateChanged(auth, (user) => {
+                     const loadingIndicator = document.getElementById('loading-indicator');
+                     const loginScreen = document.getElementById('login-screen');
+                     const mainAppContent = document.getElementById('main-app-content');
                      loadingIndicator.classList.add('hidden');
                      if (user) {
                          loginScreen.classList.add('hidden');
@@ -723,12 +859,11 @@
                  registerServiceWorker();
              } catch (error) {
                  console.error("Firebase Initialization Error:", error);
+                 const loadingIndicator = document.getElementById('loading-indicator');
                  loadingIndicator.classList.add('hidden');
                  document.body.innerHTML = '<div class="text-white text-center p-8">Could not connect to services. Please try again later.</div>'
              }
         });
-        
     </script>
 </body>
 </html>
-
