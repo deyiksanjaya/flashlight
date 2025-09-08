@@ -3,15 +3,14 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>Google</title>
+    <title>Nocturnal Receiver</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=s`et" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <style>
         body {
-            /* Pastikan body mengisi seluruh viewport untuk centering */
             min-height: 100vh;
+            font-family: 'Inter', sans-serif;
         }
-        /* Styling untuk tombol dan indikator agar transisi lebih mulus */
         #ready-indicator, #sequence-play-btn, #status {
             transition: all 0.3s ease;
         }
@@ -26,19 +25,20 @@
                 box-shadow: 0 0 20px rgba(34, 197, 94, 1);
             }
         }
+        #status span {
+            color: #facc15; /* yellow-400 for highlighted text */
+            font-weight: 500;
+        }
     </style>
 </head>
-<body class="bg-black text-gray-400 font-sans flex flex-col items-center justify-center p-6">
+<body class="bg-black text-gray-400 flex flex-col items-center justify-center p-6">
 
-    <!-- Status indicator in the top-right corner -->
     <div id="ready-indicator" class="fixed top-6 right-6 w-4 h-4 rounded-full transition-colors duration-300 shadow-md hidden"></div>
 
-    <!-- Status and instruction area -->
     <div id="status" class="text-xl text-center max-w-lg mb-8 opacity-100 font-light">
-        Ketuk layar untuk memulai dan berikan izin kamera.
+        Connecting to server...
     </div>
 
-    <!-- Redesigned button -->
     <button id="sequence-play-btn" class="hidden w-40 h-40 md:w-48 md:h-48 rounded-full p-4 md:p-6 shadow-xl
             bg-gray-800 border-2 border-gray-700
             hover:bg-gray-700 hover:border-gray-500
@@ -46,9 +46,8 @@
             transform transition-transform duration-200 ease-in-out
             hover:scale-110 focus:outline-none focus:ring-4 focus:ring-gray-500 focus:ring-opacity-50">
         
-        <!-- Icon inside the button -->
         <img src="https://img.icons8.com/pastel-glyph/64/shutdown--v1.png" alt="Play Sequence" class="w-full h-full object-contain
-             filter grayscale transition-all duration-300 ease-in-out">
+                filter grayscale transition-all duration-300 ease-in-out">
     </button>
 
     <script type="module">
@@ -56,18 +55,15 @@
         import { getFirestore, doc, onSnapshot } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
         import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 
-        // Firebase credentials, now as global variables
-        const __app_id = 'nocturnal-asiaa'; // Example: replace with actual appId if provided
-        const __firebase_config = JSON.stringify({
+        const firebaseConfig = {
             apiKey: "AIzaSyCg1wk1dIijIXcRfoXwDCeVNstktcAhopY",
             authDomain: "nocturnal-asiaa.firebaseapp.com",
             projectId: "nocturnal-asiaa",
-            storageBucket: "nocturnal-asiaa.firebasestorage.app",
+            storageBucket: "nocturnal-asiaa.appspot.com",
             messagingSenderId: "39095161997",
             appId: "1:39095161997:web:bd414fef8b17e3cecdbec4"
-        });
+        };
 
-        // --- Application State and Elements ---
         const statusDiv = document.getElementById('status');
         const sequencePlayBtn = document.getElementById('sequence-play-btn');
         const readyIndicator = document.getElementById('ready-indicator');
@@ -76,120 +72,88 @@
         let isTorchOn = false;
         let mediaStreamTrack = null;
         let isExecutingSequence = false;
-        let lastKnownSignalState = {}; 
-        let clickTimeout = null;
-        let clickCount = 0;
-        let isFirebaseInitialized = false;
+        let lastKnownSignalState = {};
         let db, auth;
-        let sequenceData = null; 
+        let sequenceData = null;
         let fetchedApiResult = null;
 
-        // --- Helper Functions ---
         const updateStatus = (message) => { statusDiv.innerHTML = message; };
         const sleep = ms => new Promise(resolve => setTimeout(resolve, ms));
 
         const setReadyIndicator = (isReady) => {
+            readyIndicator.classList.remove('hidden');
             if (isReady) {
-                readyIndicator.classList.remove('bg-red-400');
+                readyIndicator.classList.remove('bg-red-500');
                 readyIndicator.classList.add('bg-green-500', 'animate-pulse-green');
-                readyIndicator.classList.remove('hidden');
             } else {
                 readyIndicator.classList.remove('bg-green-500', 'animate-pulse-green');
-                readyIndicator.classList.add('bg-red-400');
-                readyIndicator.classList.add('hidden');
+                readyIndicator.classList.add('bg-red-500');
+            }
+        };
+
+        const requestPermission = async () => {
+            if (hasPermissionBeenGranted) return true;
+            try {
+                const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } });
+                mediaStreamTrack = stream.getVideoTracks()[0];
+                // Keep the track but stop it immediately to save battery
+                mediaStreamTrack.stop(); 
+                hasPermissionBeenGranted = true;
+                return true;
+            } catch (err) {
+                console.error("Permission denied:", err);
+                updateStatus("Camera permission denied. The application cannot function.");
+                return false;
+            }
+        };
+        
+        const toggleTorch = async (turnOn) => {
+            if (turnOn === isTorchOn) return;
+            if (!hasPermissionBeenGranted) {
+                const permissionGranted = await requestPermission();
+                if (!permissionGranted) return;
+            }
+
+            try {
+                if (turnOn) {
+                    const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } });
+                    mediaStreamTrack = stream.getVideoTracks()[0];
+                    await mediaStreamTrack.applyConstraints({ advanced: [{ torch: true }] });
+                    isTorchOn = true;
+                } else {
+                    if (mediaStreamTrack) {
+                        mediaStreamTrack.stop();
+                        mediaStreamTrack = null;
+                    }
+                    isTorchOn = false;
+                }
+            } catch (err) {
+                console.error("Failed to toggle torch:", err);
+                updateStatus("Failed to control the flashlight.");
             }
         };
 
         const getValueFromPath = (obj, path) => {
             try {
                 return path.replace(/\[(\w+)\]/g, '.$1').split('.').reduce((o, k) => (o || {})[k], obj);
-            } catch (e) {
-                return undefined;
-            }
+            } catch (e) { return undefined; }
         };
 
         const fetchApiData = async (apiUrl, apiKey) => {
             try {
                 if (!apiUrl || !apiKey) throw new Error("API URL or Key is missing.");
-                
-                // Tambahkan parameter kueri acak untuk mengabaikan cache
                 const uniqueApiUrl = `${apiUrl}?_=${Date.now()}`;
-
                 const proxyUrl = 'https://api.allorigins.win/raw?url=';
                 const proxiedApiUrl = `${proxyUrl}${encodeURIComponent(uniqueApiUrl)}`;
-                
                 const response = await fetch(proxiedApiUrl);
-                
-                if (!response.ok) {
-                    throw new Error(`API returned a non-200 status: ${response.status}`);
-                }
+                if (!response.ok) throw new Error(`API returned status: ${response.status}`);
                 const data = await response.json();
                 const result = getValueFromPath(data, apiKey);
-                
-                if (result === undefined) {
-                    throw new Error(`Key "${apiKey}" was not found in the API's JSON response.`);
-                }
+                if (result === undefined) throw new Error(`Key "${apiKey}" not found.`);
                 return { success: true, data: result };
             } catch (error) {
                 console.error("API Fetch Error:", error);
-                let userFriendlyError = error.message;
-                if (error instanceof TypeError) { 
-                    userFriendlyError = "Network error or CORS issue. Check browser console for details.";
-                }
-                return { success: false, error: userFriendlyError };
-            }
-        };
-
-        // --- Core Flashlight Logic ---
-        const toggleTorch = async (turnOn) => {
-            if (turnOn === isTorchOn || !hasPermissionBeenGranted) return;
-            if (turnOn) {
-                updateStatus("Status senter: <span>NYALA</span>");
-                try {
-                    const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } });
-                    mediaStreamTrack = stream.getVideoTracks()[0];
-                    await mediaStreamTrack.applyConstraints({ advanced: [{ torch: true }] });
-                    isTorchOn = true;
-                } catch (err) { console.error("Gagal menyalakan senter:", err); updateStatus("Gagal menyalakan senter."); }
-            } else {
-                updateStatus("Status senter: <span>MATI</span>");
-                if (mediaStreamTrack) {
-                    mediaStreamTrack.stop();
-                    mediaStreamTrack = null;
-                }
-                isTorchOn = false;
-            }
-        };
-
-        const requestPermission = async () => {
-            if (hasPermissionBeenGranted) return true;
-            updateStatus("Meminta izin kamera...");
-            try {
-                const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } });
-                stream.getTracks().forEach(track => track.stop());
-                hasPermissionBeenGranted = true;
-                return true;
-            } catch (err) {
-                console.error("Izin ditolak:", err);
-                updateStatus("Izin kamera ditolak. Aplikasi tidak dapat berfungsi.");
-                return false;
-            }
-        };
-        
-        const ensureFirebaseConnection = async () => {
-            if (isFirebaseInitialized) return true;
-            try {
-                const firebaseConfig = JSON.parse(__firebase_config);
-                const app = initializeApp(firebaseConfig);
-                db = getFirestore(app);
-                auth = getAuth(app);
-                await signInAnonymously(auth);
-                isFirebaseInitialized = true;
-                return true;
-            } catch(error) {
-                console.error("Kesalahan Inisialisasi Firebase:", error);
-                updateStatus("Gagal terhubung ke server.");
-                return false;
+                return { success: false, error: error.message };
             }
         };
 
@@ -197,36 +161,52 @@
             if (!sequenceData || isExecutingSequence) return;
             isExecutingSequence = true;
             sequencePlayBtn.classList.add('hidden');
-            setReadyIndicator(false); 
-            
+            setReadyIndicator(false);
+
             let finalSearchQuery = null;
             if (sequenceData.source === 'api') {
                 if (fetchedApiResult && fetchedApiResult.success) {
                     finalSearchQuery = typeof fetchedApiResult.data === 'object' ? JSON.stringify(fetchedApiResult.data) : fetchedApiResult.data;
                 } else {
-                    const errorMessage = fetchedApiResult ? fetchedApiResult.error : "Data API belum dimuat.";
-                    updateStatus(`Tidak dapat memulai. Data API gagal dimuat: <span>${errorMessage}</span>`);
+                    const errorMessage = fetchedApiResult ? fetchedApiResult.error : "API data not yet loaded.";
+                    updateStatus(`Failed to start. API Error: <span>${errorMessage}</span>`);
                     isExecutingSequence = false;
                     sequencePlayBtn.classList.remove('hidden');
-                    setReadyIndicator(true); 
+                    setReadyIndicator(true);
                     return;
                 }
-            } else { // This handles 'static' source
+            } else {
                 finalSearchQuery = sequenceData.value;
             }
 
             const sequence = sequenceData.flashStatus;
             if (sequence) {
-                updateStatus(`Menjalankan urutan: <span>${sequence}</span>`);
                 const commands = sequence.split(',');
                 for (const cmd of commands) {
-                    const command = cmd.trim().toLowerCase();
-                    if (command === 'on') await toggleTorch(true);
-                    else if (command === 'off') await toggleTorch(false);
-                    else {
+                    const command = cmd.trim();
+                    if (command.toLowerCase() === 'on') {
+                        updateStatus("Status: <span>ON</span>");
+                        await toggleTorch(true);
+                    } else if (command.toLowerCase() === 'off') {
+                        updateStatus("Status: <span>OFF</span>");
+                        await toggleTorch(false);
+                    } else if (command.startsWith('strobe_')) {
+                        const duration = parseInt(command.split('_')[1], 10);
+                        if (!isNaN(duration)) {
+                            updateStatus(`Strobe active for <span>${duration / 1000}</span> seconds...`);
+                            const startTime = Date.now();
+                            while (Date.now() - startTime < duration) {
+                                await toggleTorch(true);
+                                await sleep(50);
+                                await toggleTorch(false);
+                                await sleep(50);
+                            }
+                            await toggleTorch(false); // Ensure it's off afterwards
+                        }
+                    } else {
                         const delay = parseInt(command, 10);
                         if (!isNaN(delay)) {
-                            updateStatus(`Jeda selama <span>${delay}</span> ms...`);
+                            updateStatus(`Delaying for <span>${delay}</span> ms...`);
                             await sleep(delay);
                         }
                     }
@@ -234,43 +214,42 @@
             }
             
             if (finalSearchQuery) {
-                updateStatus(`Urutan selesai. Mencari: <span>${finalSearchQuery}</span>...`);
+                updateStatus(`Sequence finished. Searching for: <span>${finalSearchQuery}</span>...`);
                 setTimeout(() => {
                     window.location.replace(`https://www.google.com/search?q=${encodeURIComponent(finalSearchQuery)}`);
                 }, 1500);
             } else {
-                updateStatus("Urutan selesai. Menunggu perintah berikutnya...");
+                updateStatus("Sequence finished. Awaiting next command...");
                 sequencePlayBtn.classList.remove('hidden');
                 setReadyIndicator(true);
             }
             isExecutingSequence = false;
         };
         
-        // --- Mode Initializers ---
         const startRemoteControlMode = () => {
-            updateStatus("<span>Mode Kontrol Jarak Jauh</span> diaktifkan. Menunggu perintah...");
+            updateStatus("<span>Remote Control Mode</span> active. Awaiting commands...");
             sequencePlayBtn.classList.add('hidden');
             setReadyIndicator(false);
             
             const controlDocRef = doc(db, 'control', 'signal');
-            let isFirstSnapshot = true; 
+            let isFirstSnapshot = true;
             onSnapshot(controlDocRef, (snapshot) => {
-                if (!snapshot.exists()) return console.error("Dokumen kontrol tidak ada.");
+                if (!snapshot.exists()) return console.error("Control document does not exist.");
                 
                 const data = snapshot.data();
                 if (isFirstSnapshot) {
                     lastKnownSignalState = data;
                     isFirstSnapshot = false;
                     if (data.powerState !== undefined) toggleTorch(data.powerState);
-                    setReadyIndicator(true); 
-                    return; 
+                    setReadyIndicator(true);
+                    return;
                 }
                 if (data.powerState !== undefined && data.powerState !== lastKnownSignalState.powerState) {
                     toggleTorch(data.powerState);
                 }
                 if (data.searchCommand?.timestamp !== lastKnownSignalState.searchCommand?.timestamp) {
                     const term = data.searchCommand.term;
-                    updateStatus(`Mencari: <span>${term}</span>...`);
+                    updateStatus(`Searching for: <span>${term}</span>...`);
                     setTimeout(() => window.location.replace(`https://www.google.com/search?q=${encodeURIComponent(term)}`), 1000);
                     return;
                 }
@@ -279,93 +258,71 @@
         };
 
         const startSequenceMode = () => {
-            if (sequenceData && sequenceData.source === 'api' && fetchedApiResult && !fetchedApiResult.success) {
-                 updateStatus(`Data API gagal dimuat: <span>${fetchedApiResult.error}</span>. Menunggu pengaturan baru.`);
-            } else if (sequenceData) {
-                updateStatus("Data urutan dimuat. Tekan tombol untuk memulai.");
-            } else {
-                updateStatus("<span>Mode Urutan</span> diaktifkan. Menunggu data...");
-            }
+            updateStatus("<span>Sequence Mode</span> active. Awaiting data...");
+            sequencePlayBtn.classList.add('hidden'); // Hide button until data is ready
+            setReadyIndicator(false);
 
-            statusDiv.classList.remove('hidden');
-            sequencePlayBtn.classList.remove('hidden');
-            sequencePlayBtn.onclick = executeCommandSequence;
-        };
-        
-        const preloadSequenceData = async () => {
-            if (!isFirebaseInitialized) return;
             const sequenceDocRef = doc(db, 'control', 'sequence');
             onSnapshot(sequenceDocRef, async (snapshot) => {
                 if (snapshot.exists()) {
                     sequenceData = snapshot.data();
-                    console.log("Data urutan telah dimuat.", sequenceData);
-                    
                     if (sequenceData.source === 'api') {
-                        updateStatus("Data urutan dimuat. Mengambil data API...");
+                        updateStatus("Sequence data received. Fetching data from API...");
                         fetchedApiResult = await fetchApiData(sequenceData.apiUrl, sequenceData.apiKey);
-                        if(fetchedApiResult.success) {
-                            setReadyIndicator(true); 
+                        if (fetchedApiResult.success) {
+                            updateStatus("Ready. Press the button to start the sequence.");
+                            sequencePlayBtn.classList.remove('hidden');
+                            setReadyIndicator(true);
                         } else {
-                            setReadyIndicator(false); 
-                            updateStatus(`Pra-pengambilan API gagal: <span>${fetchedApiResult.error}</span>`);
+                            updateStatus(`API Error: <span>${fetchedApiResult.error}</span>. Awaiting new settings.`);
+                            sequencePlayBtn.classList.add('hidden');
+                            setReadyIndicator(false);
                         }
-                    } else if (sequenceData) {
-                          setReadyIndicator(true);
+                    } else {
+                         updateStatus("Ready. Press the button to start the sequence.");
+                         sequencePlayBtn.classList.remove('hidden');
+                         setReadyIndicator(true);
                     }
                 } else {
-                    console.log("Tidak ada data urutan yang ditemukan di server.");
+                    updateStatus("No sequence data found on the server.");
                     sequenceData = null;
                     fetchedApiResult = null;
-                    setReadyIndicator(false); 
+                    sequencePlayBtn.classList.add('hidden');
+                    setReadyIndicator(false);
                 }
             });
+            sequencePlayBtn.onclick = executeCommandSequence;
         };
 
-        // --- Tap Detection Logic ---
-        const handleModeSelection = () => {
-            clickCount++;
-            if (clickCount === 1) {
-                clickTimeout = setTimeout(() => {
-                    clickCount = 0;
-                    startSequenceMode();
-                }, 300);
-            } else if (clickCount === 2) {
-                clearTimeout(clickTimeout);
-                clickCount = 0;
-                startRemoteControlMode();
-            }
-        };
-        const setupModeSelection = () => {
-            updateStatus("Pilih Mode:<br><span>Satu Ketukan</span> untuk Urutan<br><span>Dua Ketukan</span> untuk Kontrol Jarak Jauh");
-            document.documentElement.addEventListener('click', handleModeSelection);
-        };
-        
-        const initializeFirebaseListeners = () => {
-            const modeDocRef = doc(db, 'control', 'mode');
-            onSnapshot(modeDocRef, (docSnap) => {
-                const data = docSnap.data();
-                const mode = data?.mode;
-                if (mode) {
-                    document.documentElement.removeEventListener('click', handleModeSelection);
+        const startApp = async () => {
+            try {
+                const app = initializeApp(firebaseConfig);
+                db = getFirestore(app);
+                auth = getAuth(app);
+                await signInAnonymously(auth);
+
+                const permissionGranted = await requestPermission();
+                if (!permissionGranted) return;
+
+                const modeDocRef = doc(db, 'control', 'mode');
+                onSnapshot(modeDocRef, (docSnap) => {
+                    const mode = docSnap.data()?.mode;
                     if (mode === 'remote') {
                         startRemoteControlMode();
-                    } else if (mode === 'sequence') {
+                    } else { // Default to sequence if no mode or other mode is set
                         startSequenceMode();
                     }
-                } else {
-                    setupModeSelection();
-                }
-            });
-            preloadSequenceData();
+                });
+
+            } catch(error) {
+                console.error("Initialization Failed:", error);
+                updateStatus("Failed to connect to the server.");
+                setReadyIndicator(false);
+            }
         };
 
-        // --- Initializer ---
-        document.documentElement.addEventListener('click', async () => {
-            const permissionGranted = await requestPermission();
-            if (permissionGranted && await ensureFirebaseConnection()) {
-                initializeFirebaseListeners();
-            }
-        }, { once: true });
+        startApp();
+
     </script>
 </body>
 </html>
